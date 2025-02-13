@@ -9,7 +9,7 @@ namespace debt_collector_api.Models
         public Expense Expense { get; set; }
         public string Name { get; set; }
         public int TotalCost { get; set; }
-        public List<Share> Shares { get; set; } = [];
-        public List<PaidBy> PaidBy { get; set; } = [];
+        public List<Debtor> Debtors { get; set; } = [];
+        public List<Payer> Payers { get; set; } = [];
     }
 }

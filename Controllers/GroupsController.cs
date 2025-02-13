@@ -27,14 +27,27 @@ namespace debt_collector_api.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Group>>> GetGroup()
         {
-            return await _context.Group.ToListAsync();
+            return await _context.Groups.ToListAsync();
         }
 
         // GET: api/Groups/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Group>> GetGroup(int id)
         {
-            var @group = await _context.Group.FindAsync(id);
+            var personId = GetCurrentPersonId();
+
+            if (personId == 0 || personId == null) return Unauthorized();
+
+            var userIsInGroup = await _context.PersonGroups.FirstOrDefaultAsync(pg => pg.GroupId == id && pg.PersonId == personId);
+
+            if (userIsInGroup == null) return NotFound();
+
+            var @group = await _context.Groups
+                .Where(g => g.Id == id)
+                .Include(g => g.Expenses)
+                .Include(g => g.PersonGroups)
+                .ThenInclude(pg => pg.Person)
+                .FirstOrDefaultAsync();
 
             if (@group == null)
             {
@@ -47,12 +60,12 @@ namespace debt_collector_api.Controllers
         [HttpGet("my-groups")]
         public async Task<ActionResult<List<Group>>> GetGroupsForCurrentUser()
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var personId = GetCurrentPersonId();
 
-            if (userId == 0) return Unauthorized();
+            if (personId == 0 || personId == null) return Unauthorized();
 
-            var groups = await _context.PersonGroup
-                .Where(pg => pg.PersonId == userId)
+            var groups = await _context.PersonGroups
+                .Where(pg => pg.PersonId == personId)
                 .Select(pg => pg.Group)
                 .ToListAsync();
 
@@ -64,14 +77,14 @@ namespace debt_collector_api.Controllers
         [HttpPost("join-group")]
         public async Task<ActionResult> JoinGroup([FromBody] JoinGroupRequest request)
         {
-            var userId = GetCurrentUserId();
+            var personId = GetCurrentPersonId();
 
-            if (userId == null)
+            if (personId == 0 || personId == null)
             {
                 return Unauthorized(new { message = "User not authenticated" });
             }
 
-            var group = await _context.Group
+            var group = await _context.Groups
                 .Where(g => g.Password.ToLower() == request.Password.ToLower())
                 .FirstOrDefaultAsync();
 
@@ -80,8 +93,8 @@ namespace debt_collector_api.Controllers
                 return NotFound(new { message = "Group with this password not found" });
             }
 
-            var existingMember = await _context.PersonGroup
-                .Where(pg => pg.PersonId == userId && pg.GroupId == group.Id)
+            var existingMember = await _context.PersonGroups
+                .Where(pg => pg.PersonId == personId && pg.GroupId == group.Id)
                 .FirstOrDefaultAsync();
 
             if (existingMember != null)
@@ -91,57 +104,23 @@ namespace debt_collector_api.Controllers
 
             var personGroup = new PersonGroup
             {
-                PersonId = userId.Value,
+                PersonId = personId.Value,
                 GroupId = group.Id
             };
 
-            _context.PersonGroup.Add(personGroup);
+            _context.PersonGroups.Add(personGroup);
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Successfully joined the group" });
         }
 
-
-
-        // PUT: api/Groups/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutGroup(int id, Group @group)
-        {
-            if (id != @group.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(@group).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!GroupExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
         // POST: api/Groups
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<Group>> PostGroup(Group @group)
         {
-            var personId = GetCurrentUserId();
+            var personId = GetCurrentPersonId();
 
-            if (personId == null)
+            if (personId == 0 || personId == null)
             {
                 return Unauthorized(new { message = "Invalid token" });
             }
@@ -152,7 +131,7 @@ namespace debt_collector_api.Controllers
             @group.ModifiedOn = DateTime.UtcNow;
             @group.Password = await GenerateUniqueRandomPasswordAsync(5);
 
-            _context.Group.Add(@group);
+            _context.Groups.Add(@group);
             await _context.SaveChangesAsync();
 
             var personGroup = new PersonGroup
@@ -161,7 +140,7 @@ namespace debt_collector_api.Controllers
                 GroupId = @group.Id
             };
 
-            _context.PersonGroup.Add(personGroup);
+            _context.PersonGroups.Add(personGroup);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetGroup", new { id = @group.Id }, @group);
@@ -180,41 +159,20 @@ namespace debt_collector_api.Controllers
                                                .Select(_ => chars[random.Next(chars.Length)])
                                                .ToArray());
 
-                isUnique = !await _context.Group.AnyAsync(g => g.Password == password);
+                isUnique = !await _context.Groups.AnyAsync(g => g.Password == password);
             }
             while (!isUnique);
 
             return password;
         }
 
-        // DELETE: api/Groups/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteGroup(int id)
+        private int? GetCurrentPersonId()
         {
-            var @group = await _context.Group.FindAsync(id);
-            if (@group == null)
+            var nameIdentifierClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+
+            if (nameIdentifierClaim != null)
             {
-                return NotFound();
-            }
-
-            _context.Group.Remove(@group);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool GroupExists(int id)
-        {
-            return _context.Group.Any(e => e.Id == id);
-        }
-
-        private int? GetCurrentUserId()
-        {
-            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
-
-            if (userIdClaim != null)
-            {
-                return int.Parse(userIdClaim.Value);
+                return int.Parse(nameIdentifierClaim.Value);
             }
 
             return null;

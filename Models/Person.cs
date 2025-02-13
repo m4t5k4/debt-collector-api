@@ -9,7 +9,5 @@ namespace debt_collector_api.Models
         public string Password { get; set; }
         public List<PersonGroup> PersonGroups { get; set; } = [];
         public List<Order> Orders { get; set; } = [];
-        public List<Share> Shares { get; set; } = [];
-
     }
 }

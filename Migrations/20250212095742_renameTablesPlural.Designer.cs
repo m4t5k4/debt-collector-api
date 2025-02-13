@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using debt_collector_api.Data;
 
@@ -11,9 +12,11 @@ using debt_collector_api.Data;
 namespace debt_collector_api.Migrations
 {
     [DbContext(typeof(DebtCollectorContext))]
-    partial class DebtCollectorContextModelSnapshot : ModelSnapshot
+    [Migration("20250212095742_renameTablesPlural")]
+    partial class renameTablesPlural
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -29,9 +32,6 @@ namespace debt_collector_api.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<bool>("HasPaid")
-                        .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -272,13 +272,13 @@ namespace debt_collector_api.Migrations
             modelBuilder.Entity("debt_collector_api.Models.Debtor", b =>
                 {
                     b.HasOne("debt_collector_api.Models.Order", "Order")
-                        .WithMany("Debtors")
+                        .WithMany("Shares")
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("debt_collector_api.Models.Person", "Person")
-                        .WithMany()
+                        .WithMany("Shares")
                         .HasForeignKey("PersonId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -317,7 +317,7 @@ namespace debt_collector_api.Migrations
             modelBuilder.Entity("debt_collector_api.Models.Payer", b =>
                 {
                     b.HasOne("debt_collector_api.Models.Order", "Order")
-                        .WithMany("Payers")
+                        .WithMany("PaidBy")
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -366,9 +366,9 @@ namespace debt_collector_api.Migrations
 
             modelBuilder.Entity("debt_collector_api.Models.Order", b =>
                 {
-                    b.Navigation("Debtors");
+                    b.Navigation("PaidBy");
 
-                    b.Navigation("Payers");
+                    b.Navigation("Shares");
                 });
 
             modelBuilder.Entity("debt_collector_api.Models.Person", b =>
@@ -376,6 +376,8 @@ namespace debt_collector_api.Migrations
                     b.Navigation("Orders");
 
                     b.Navigation("PersonGroups");
+
+                    b.Navigation("Shares");
                 });
 #pragma warning restore 612, 618
         }

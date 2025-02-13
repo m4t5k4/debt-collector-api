@@ -33,7 +33,7 @@ namespace debt_collector_api.Controllers
                 return BadRequest(new { message = "Invalid request" });
             }
 
-            var person = await _context.Person
+            var person = await _context.Persons
                 .Where(p => p.Username == model.Username)
                 .FirstOrDefaultAsync();
 
@@ -69,14 +69,14 @@ namespace debt_collector_api.Controllers
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
-            var userId = GetCurrentUserId();
+            var userId = GetCurrentPersonId();
 
             if (userId == null)
             {
                 return Unauthorized(new { message = "Invalid token" });
             }
 
-            var person = await _context.Person.FirstOrDefaultAsync(p => p.Id == userId);
+            var person = await _context.Persons.FirstOrDefaultAsync(p => p.Id == userId);
 
             if (person == null)
             {
@@ -108,7 +108,7 @@ namespace debt_collector_api.Controllers
             if (storedToken == null || storedToken.Expiration < DateTime.UtcNow)
                 return Unauthorized(new { message = "Refresh token is invalid or expired" });
 
-            var person = await _context.Person.FindAsync(storedToken.PersonId);
+            var person = await _context.Persons.FindAsync(storedToken.PersonId);
             if (person == null) return Unauthorized(new { message = "User not found" });
 
             var newJwt = GenerateJwtToken(person);
@@ -121,13 +121,13 @@ namespace debt_collector_api.Controllers
             return Ok(new { token = newJwt, refreshToken = newRefreshToken });
         }
 
-        private int? GetCurrentUserId()
+        private int? GetCurrentPersonId()
         {
-            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            var nameIdentifierClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
 
-            if (userIdClaim != null)
+            if (nameIdentifierClaim != null)
             {
-                return int.Parse(userIdClaim.Value);
+                return int.Parse(nameIdentifierClaim.Value);
             }
 
             return null;
@@ -145,7 +145,7 @@ namespace debt_collector_api.Controllers
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddMinutes(15),
+                Expires = DateTime.UtcNow.AddMinutes(30),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
 

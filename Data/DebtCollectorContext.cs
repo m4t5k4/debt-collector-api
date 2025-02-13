@@ -10,13 +10,13 @@ namespace debt_collector_api.Data
         {
         }
 
-        public DbSet<Expense> Expense { get; set; } = default!;
-        public DbSet<Group> Group { get; set; } = default!;
-        public DbSet<Order> Order { get; set; } = default!;
-        public DbSet<PaidBy> PaidBy { get; set; } = default!;
-        public DbSet<Person> Person { get; set; } = default!;
-        public DbSet<PersonGroup> PersonGroup { get; set; } = default!;
-        public DbSet<Share> Share { get; set; } = default!;
+        public DbSet<Expense> Expenses { get; set; } = default!;
+        public DbSet<Group> Groups { get; set; } = default!;
+        public DbSet<Order> Orders { get; set; } = default!;
+        public DbSet<Payer> Payers { get; set; } = default!;
+        public DbSet<Person> Persons { get; set; } = default!;
+        public DbSet<PersonGroup> PersonGroups { get; set; } = default!;
+        public DbSet<Debtor> Debtors { get; set; } = default!;
         public DbSet<RefreshToken> RefreshTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -40,21 +40,21 @@ namespace debt_collector_api.Data
                 .HasForeignKey(o => o.ExpenseId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<PaidBy>()
+            modelBuilder.Entity<Payer>()
                 .HasOne(pb => pb.Person)
                 .WithMany()
                 .HasForeignKey(pb => pb.PersonId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<Share>()
+            modelBuilder.Entity<Debtor>()
                 .HasOne(s => s.Person)
-                .WithMany(p => p.Shares)
+                .WithMany()
                 .HasForeignKey(s => s.PersonId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<Share>()
+            modelBuilder.Entity<Debtor>()
                 .HasOne(s => s.Order)
-                .WithMany(o => o.Shares)
+                .WithMany(o => o.Debtors)
                 .HasForeignKey(s => s.OrderId)
                 .OnDelete(DeleteBehavior.Cascade);
         }
