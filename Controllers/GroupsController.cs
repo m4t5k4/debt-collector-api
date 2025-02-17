@@ -9,6 +9,7 @@ using debt_collector_api.Data;
 using debt_collector_api.Models;
 using System.Security.Claims;
 using debt_collector_api.Requests;
+using debt_collector_api.Responses;
 
 namespace debt_collector_api.Controllers
 {
@@ -32,7 +33,7 @@ namespace debt_collector_api.Controllers
 
         // GET: api/Groups/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Group>> GetGroup(int id)
+        public async Task<ActionResult<GroupDTO>> GetGroup(int id)
         {
             var personId = GetCurrentPersonId();
 
@@ -47,7 +48,47 @@ namespace debt_collector_api.Controllers
                 .Include(g => g.Expenses)
                 .Include(g => g.PersonGroups)
                 .ThenInclude(pg => pg.Person)
-                .FirstOrDefaultAsync();
+                .Select(g => new GroupDTO
+                {
+                    Id = g.Id,
+                    Name = g.Name,
+                    Password = g.Password,
+                    Expenses = g.Expenses.Select(e => new ExpenseDTO
+                    {
+                        Id = e.Id,
+                        GroupId = e.GroupId,
+                        Name = e.Name,
+                        Currency = e.Currency,
+                        Orders = e.Orders.Select(o => new OrderDTO
+                        {
+                            Id = o.Id,
+                            ExpenseId = o.ExpenseId,
+                            Name = o.Name,
+                            TotalCost = o.TotalCost,
+                            Debtors = o.Debtors.Select(d => new DebtorDTO
+                            {
+                                Id = d.Id,
+                                PersonId = d.PersonId,
+                                OrderId = d.OrderId,
+                                Value = d.Value,
+                                HasPaid = d.HasPaid
+                            }).ToList(),
+                            Payers = o.Payers.Select(p => new PayerDTO
+                            {
+                                Id = p.Id,
+                                PersonId = p.PersonId,
+                                OrderId = p.OrderId,
+                                Value = p.Value,
+                            }).ToList()
+                        }).ToList(),
+                    }).ToList(),
+                    People = g.PersonGroups.Select(pg => new PersonDTO
+                    {
+                        Id = pg.Person.Id,
+                        Username = pg.Person.Username
+                    }).ToList()
+                }).FirstOrDefaultAsync();
+                
 
             if (@group == null)
             {
@@ -72,6 +113,34 @@ namespace debt_collector_api.Controllers
             if (groups == null) return NotFound(new { message = "You are not a member of any group." });
 
             return Ok(groups);
+        }
+
+        [HttpGet("{groupId}/members")]
+        public async Task<ActionResult<IEnumerable<Person>>> GetPeopleInGroup(int groupId)
+        {
+            var personId = GetCurrentPersonId();
+
+            if (personId == 0 || personId == null) return Unauthorized();
+
+            var isPersonInGroup = await _context.PersonGroups
+                .AnyAsync(pg => pg.PersonId == personId && pg.GroupId == groupId);
+
+            if (!isPersonInGroup)
+            {
+                return Forbid();
+            }
+
+            var people = await _context.PersonGroups
+                .Where(pg => pg.GroupId == groupId)
+                .Include(pg => pg.Person)
+                .Select(pg => new PersonDTO
+                {
+                    Id = pg.Person.Id,
+                    Username = pg.Person.Username,
+                })
+                .ToListAsync();
+
+            return Ok(people);
         }
 
         [HttpPost("join-group")]

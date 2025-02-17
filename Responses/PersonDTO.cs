@@ -1,6 +1,8 @@
-﻿namespace debt_collector_api.Responses
+﻿using debt_collector_api.Models;
+
+namespace debt_collector_api.Responses
 {
-    public class PersonDTO
+    public class PersonDTO : AuditInfo
     {
         public int Id { get; set; }
         public string Username { get; set; }

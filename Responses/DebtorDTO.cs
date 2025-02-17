@@ -1,12 +1,12 @@
-﻿namespace debt_collector_api.Models
+﻿using debt_collector_api.Models;
+
+namespace debt_collector_api.Responses
 {
-    public class Debtor : AuditInfo
+    public class DebtorDTO : AuditInfo
     {
         public int Id { get; set; }
         public int PersonId { get; set; }
-        public Person Person { get; set; }
         public int OrderId { get; set; }
-        public Order Order { get; set; }
         public decimal Value { get; set; }
         public bool HasPaid { get; set; }
     }

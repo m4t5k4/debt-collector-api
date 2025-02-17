@@ -1,6 +1,6 @@
 ﻿namespace debt_collector_api.Models
 {
-    public class PersonGroup
+    public class PersonGroup : AuditInfo
     {
         public int PersonId { get; set; }
         public Person Person { get; set; }

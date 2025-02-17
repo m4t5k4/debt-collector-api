@@ -39,34 +39,6 @@ namespace debt_collector_api.Controllers
             return person;
         }
 
-        [HttpGet("{groupId}/people")]
-        public async Task<ActionResult<IEnumerable<Person>>> GetPeopleInGroup(int groupId)
-        {
-            var personId = GetCurrentPersonId();
-
-            if (personId == 0 || personId == null) return Unauthorized();
-
-            var isPersonInGroup = await _context.PersonGroups
-                .AnyAsync(pg => pg.PersonId == personId && pg.GroupId == groupId);
-
-            if (!isPersonInGroup)
-            {
-                return Forbid();
-            }
-
-            var people = await _context.PersonGroups
-                .Where(pg => pg.GroupId == groupId)
-                .Include(pg => pg.Person)
-                .Select(pg => new PersonDTO
-                {
-                    Id = pg.Person.Id,
-                    Username = pg.Person.Username,
-                })
-                .ToListAsync();
-
-            return Ok(people);
-        }
-
         // POST: api/People
         [HttpPost]
         public async Task<ActionResult<Person>> PostPerson(Person person)

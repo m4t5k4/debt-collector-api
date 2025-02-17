@@ -2,7 +2,7 @@
 
 namespace debt_collector_api.Models
 {
-    public class Person
+    public class Person : AuditInfo
     {
         public int Id { get; set; }
         public string Username { get; set; }

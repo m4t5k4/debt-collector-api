@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using debt_collector_api.Data;
 
@@ -11,9 +12,11 @@ using debt_collector_api.Data;
 namespace debt_collector_api.Migrations
 {
     [DbContext(typeof(DebtCollectorContext))]
-    partial class DebtCollectorContextModelSnapshot : ModelSnapshot
+    [Migration("20250217103546_ExtraAuditInfo")]
+    partial class ExtraAuditInfo
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -44,6 +47,10 @@ namespace debt_collector_api.Migrations
 
                     b.Property<DateTime>("ModifiedOn")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("OrderId")
                         .HasColumnType("int");
@@ -195,6 +202,10 @@ namespace debt_collector_api.Migrations
 
                     b.Property<DateTime>("ModifiedOn")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("OrderId")
                         .HasColumnType("int");
