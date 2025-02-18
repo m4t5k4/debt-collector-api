@@ -1,9 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-
 using debt_collector_api.Data;
 
 const string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
@@ -17,6 +15,7 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddSignalR();
 
 // SQL DB
 builder.Services.AddDbContext<DebtCollectorContext>(options =>
@@ -28,8 +27,10 @@ builder.Services.AddCors(options =>
     options.AddPolicy(name: MyAllowSpecificOrigins,
                       policy =>
                       {
-                          policy.AllowAnyHeader()
-                            .AllowAnyOrigin();
+                          policy.WithOrigins("http://localhost:4200")
+                            .AllowCredentials()
+                            .AllowAnyHeader()
+                            .AllowAnyMethod();
 
                       });
 });
@@ -59,10 +60,15 @@ if (app.Environment.IsDevelopment())
     app.UseCors(MyAllowSpecificOrigins);
 }
 
+app.UseHttpsRedirection();
+
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapHub<GroupHub>("/hubs/group");
+
 app.MapControllers();
 app.Run();

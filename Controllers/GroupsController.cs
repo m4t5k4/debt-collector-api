@@ -10,6 +10,9 @@ using debt_collector_api.Models;
 using System.Security.Claims;
 using debt_collector_api.Requests;
 using debt_collector_api.Responses;
+using Microsoft.AspNetCore.SignalR;
+using System.Text.RegularExpressions;
+using Group = debt_collector_api.Models.Group;
 
 namespace debt_collector_api.Controllers
 {
@@ -53,25 +56,41 @@ namespace debt_collector_api.Controllers
                     Id = g.Id,
                     Name = g.Name,
                     Password = g.Password,
+                    CreatedOn = g.CreatedOn,
+                    CreatedByPersonId = g.CreatedByPersonId,
+                    ModifiedOn = g.ModifiedOn,
+                    ModifiedByPersonId = g.ModifiedByPersonId,
                     Expenses = g.Expenses.Select(e => new ExpenseDTO
                     {
                         Id = e.Id,
                         GroupId = e.GroupId,
                         Name = e.Name,
                         Currency = e.Currency,
+                        CreatedOn = e.CreatedOn,
+                        CreatedByPersonId = e.CreatedByPersonId,
+                        ModifiedOn = e.ModifiedOn,
+                        ModifiedByPersonId = e.ModifiedByPersonId,
                         Orders = e.Orders.Select(o => new OrderDTO
                         {
                             Id = o.Id,
                             ExpenseId = o.ExpenseId,
                             Name = o.Name,
                             TotalCost = o.TotalCost,
+                            CreatedOn = o.CreatedOn,
+                            CreatedByPersonId = o.CreatedByPersonId,
+                            ModifiedOn = o.ModifiedOn,
+                            ModifiedByPersonId = o.ModifiedByPersonId,
                             Debtors = o.Debtors.Select(d => new DebtorDTO
                             {
                                 Id = d.Id,
                                 PersonId = d.PersonId,
                                 OrderId = d.OrderId,
                                 Value = d.Value,
-                                HasPaid = d.HasPaid
+                                HasPaid = d.HasPaid,
+                                CreatedOn = d.CreatedOn,
+                                CreatedByPersonId = d.CreatedByPersonId,
+                                ModifiedOn = d.ModifiedOn,
+                                ModifiedByPersonId = d.ModifiedByPersonId,
                             }).ToList(),
                             Payers = o.Payers.Select(p => new PayerDTO
                             {
@@ -79,13 +98,17 @@ namespace debt_collector_api.Controllers
                                 PersonId = p.PersonId,
                                 OrderId = p.OrderId,
                                 Value = p.Value,
+                                CreatedOn = p.CreatedOn,
+                                CreatedByPersonId = p.CreatedByPersonId,
+                                ModifiedOn = p.ModifiedOn,
+                                ModifiedByPersonId = p.ModifiedByPersonId,
                             }).ToList()
                         }).ToList(),
                     }).ToList(),
                     People = g.PersonGroups.Select(pg => new PersonDTO
                     {
                         Id = pg.Person.Id,
-                        Username = pg.Person.Username
+                        Username = pg.Person.Username,
                     }).ToList()
                 }).FirstOrDefaultAsync();
                 
@@ -180,6 +203,8 @@ namespace debt_collector_api.Controllers
             _context.PersonGroups.Add(personGroup);
             await _context.SaveChangesAsync();
 
+            var hubContext = HttpContext.RequestServices.GetRequiredService<IHubContext<GroupHub>>();
+            await hubContext.Clients.Group(group.Id.ToString()).SendAsync("GroupUpdated");
             return Ok(new { message = "Successfully joined the group" });
         }
 
