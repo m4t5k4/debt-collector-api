@@ -35,7 +35,7 @@ namespace debt_collector_api.Controllers
             }
 
             var expense = await _context.Expenses
-                .Include(e => e.Group)
+                .Include(e => e.Orders)
                 .Where(e => e.Id == id)
                 .FirstOrDefaultAsync();
 

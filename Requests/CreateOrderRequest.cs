@@ -1,8 +1,9 @@
 ﻿using debt_collector_api.Models;
+using debt_collector_api.Responses;
 
-namespace debt_collector_api.Responses
+namespace debt_collector_api.Requests
 {
-    public class OrderDTO : AuditInfo
+    public class CreateOrderRequest
     {
         public int Id { get; set; }
         public int ExpenseId { get; set; }
