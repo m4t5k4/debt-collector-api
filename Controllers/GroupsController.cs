@@ -13,6 +13,7 @@ using debt_collector_api.Responses;
 using Microsoft.AspNetCore.SignalR;
 using System.Text.RegularExpressions;
 using Group = debt_collector_api.Models.Group;
+using debt_collector_api.Helpers;
 
 namespace debt_collector_api.Controllers
 {
@@ -21,10 +22,15 @@ namespace debt_collector_api.Controllers
     public class GroupsController : ControllerBase
     {
         private readonly DebtCollectorContext _context;
+        private readonly AuthorizationHelper _authorizationHelper;
 
-        public GroupsController(DebtCollectorContext context)
+        public GroupsController(
+            DebtCollectorContext context,
+            AuthorizationHelper authorizationHelper
+            )
         {
             _context = context;
+            _authorizationHelper = authorizationHelper;
         }
 
         // GET: api/Groups
@@ -38,9 +44,9 @@ namespace debt_collector_api.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<GroupDTO>> GetGroup(int id)
         {
-            var personId = GetCurrentPersonId();
+            var personId = _authorizationHelper.GetCurrentPersonId();    
 
-            if (personId == 0 || personId == null) return Unauthorized();
+            if (personId == null) return Unauthorized();
 
             var userIsInGroup = await _context.PersonGroups.FirstOrDefaultAsync(pg => pg.GroupId == id && pg.PersonId == personId);
 
@@ -113,10 +119,7 @@ namespace debt_collector_api.Controllers
                 }).FirstOrDefaultAsync();
                 
 
-            if (@group == null)
-            {
-                return NotFound();
-            }
+            if (@group == null) return NotFound();
 
             return @group;
         }
@@ -124,9 +127,9 @@ namespace debt_collector_api.Controllers
         [HttpGet("my-groups")]
         public async Task<ActionResult<List<Group>>> GetGroupsForCurrentUser()
         {
-            var personId = GetCurrentPersonId();
+            var personId = _authorizationHelper.GetCurrentPersonId();
 
-            if (personId == 0 || personId == null) return Unauthorized();
+            if (personId == null) return Unauthorized();
 
             var groups = await _context.PersonGroups
                 .Where(pg => pg.PersonId == personId)
@@ -141,17 +144,14 @@ namespace debt_collector_api.Controllers
         [HttpGet("{groupId}/members")]
         public async Task<ActionResult<IEnumerable<Person>>> GetPeopleInGroup(int groupId)
         {
-            var personId = GetCurrentPersonId();
+            var personId = _authorizationHelper.GetCurrentPersonId();
 
-            if (personId == 0 || personId == null) return Unauthorized();
+            if (personId == null) return Unauthorized();
 
             var isPersonInGroup = await _context.PersonGroups
                 .AnyAsync(pg => pg.PersonId == personId && pg.GroupId == groupId);
 
-            if (!isPersonInGroup)
-            {
-                return Forbid();
-            }
+            if (!isPersonInGroup) return Forbid();
 
             var people = await _context.PersonGroups
                 .Where(pg => pg.GroupId == groupId)
@@ -169,30 +169,21 @@ namespace debt_collector_api.Controllers
         [HttpPost("join-group")]
         public async Task<ActionResult> JoinGroup([FromBody] JoinGroupRequest request)
         {
-            var personId = GetCurrentPersonId();
+            var personId = _authorizationHelper.GetCurrentPersonId();
 
-            if (personId == 0 || personId == null)
-            {
-                return Unauthorized(new { message = "User not authenticated" });
-            }
+            if (personId == null) return Unauthorized(new { message = "User not authenticated" });
 
             var group = await _context.Groups
                 .Where(g => g.Password.ToLower() == request.Password.ToLower())
                 .FirstOrDefaultAsync();
 
-            if (group == null)
-            {
-                return NotFound(new { message = "Group with this password not found" });
-            }
+            if (group == null) return NotFound(new { message = "Group with this password not found" });
 
             var existingMember = await _context.PersonGroups
                 .Where(pg => pg.PersonId == personId && pg.GroupId == group.Id)
                 .FirstOrDefaultAsync();
 
-            if (existingMember != null)
-            {
-                return BadRequest(new { message = "You are already a member of this group" });
-            }
+            if (existingMember != null) return BadRequest(new { message = "You are already a member of this group" });
 
             var personGroup = new PersonGroup
             {
@@ -205,6 +196,7 @@ namespace debt_collector_api.Controllers
 
             var hubContext = HttpContext.RequestServices.GetRequiredService<IHubContext<GroupHub>>();
             await hubContext.Clients.Group(group.Id.ToString()).SendAsync("GroupUpdated");
+
             return Ok(new { message = "Successfully joined the group" });
         }
 
@@ -212,18 +204,15 @@ namespace debt_collector_api.Controllers
         [HttpPost]
         public async Task<ActionResult<Group>> PostGroup(Group @group)
         {
-            var personId = GetCurrentPersonId();
+            var personId = _authorizationHelper.GetCurrentPersonId();
 
-            if (personId == 0 || personId == null)
-            {
-                return Unauthorized(new { message = "Invalid token" });
-            }
+            if (personId == null) return Unauthorized(new { message = "Invalid token" });
 
             @group.CreatedByPersonId = personId.Value;
             @group.ModifiedByPersonId = personId.Value;
             @group.CreatedOn = DateTime.UtcNow;
             @group.ModifiedOn = DateTime.UtcNow;
-            @group.Password = await GenerateUniqueRandomPasswordAsync(5);
+            @group.Password = await _authorizationHelper.GenerateUniqueRandomPasswordAsync(5);
 
             _context.Groups.Add(@group);
             await _context.SaveChangesAsync();
@@ -239,38 +228,5 @@ namespace debt_collector_api.Controllers
 
             return CreatedAtAction("GetGroup", new { id = @group.Id }, @group);
         }
-
-        private async Task<string> GenerateUniqueRandomPasswordAsync(int length)
-        {
-            string password;
-            var isUnique = false;
-            var random = new Random();
-            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-            do
-            {
-                password = new string(Enumerable.Range(0, length)
-                                               .Select(_ => chars[random.Next(chars.Length)])
-                                               .ToArray());
-
-                isUnique = !await _context.Groups.AnyAsync(g => g.Password == password);
-            }
-            while (!isUnique);
-
-            return password;
-        }
-
-        private int? GetCurrentPersonId()
-        {
-            var nameIdentifierClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
-
-            if (nameIdentifierClaim != null)
-            {
-                return int.Parse(nameIdentifierClaim.Value);
-            }
-
-            return null;
-        }
-
     }
 }

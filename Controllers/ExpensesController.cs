@@ -9,6 +9,7 @@ using debt_collector_api.Data;
 using debt_collector_api.Models;
 using System.Security.Claims;
 using debt_collector_api.Requests;
+using debt_collector_api.Helpers;
 
 namespace debt_collector_api.Controllers
 {
@@ -17,40 +18,36 @@ namespace debt_collector_api.Controllers
     public class ExpensesController : ControllerBase
     {
         private readonly DebtCollectorContext _context;
+        private readonly AuthorizationHelper _authorizationHelper;
 
-        public ExpensesController(DebtCollectorContext context)
+        public ExpensesController(
+            DebtCollectorContext context,
+            AuthorizationHelper authorizationHelper
+            )
         {
             _context = context;
+            _authorizationHelper = authorizationHelper;
         }
 
         // GET: api/Expenses/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Expense>> GetExpense(int id)
         {
-            var personId = GetCurrentPersonId();
+            var personId = _authorizationHelper.GetCurrentPersonId();
 
-            if (personId == null)
-            {
-                return Unauthorized(new { message = "Invalid token" });
-            }
+            if (personId == null) return Unauthorized(new { message = "Invalid token" });
 
             var expense = await _context.Expenses
                 .Include(e => e.Orders)
                 .Where(e => e.Id == id)
                 .FirstOrDefaultAsync();
 
-            if (expense == null)
-            {
-                return NotFound(new { message = "Expense not found" });
-            }
+            if (expense == null) return NotFound(new { message = "Expense not found" });
 
             var isPersonInGroup = await _context.PersonGroups
                 .AnyAsync(pg => pg.PersonId == personId && pg.GroupId == expense.GroupId);
 
-            if (!isPersonInGroup)
-            {
-                return Forbid();
-            }
+            if (!isPersonInGroup) return Forbid();
 
             return Ok(expense);
         }
@@ -59,26 +56,18 @@ namespace debt_collector_api.Controllers
         [HttpPost]
         public async Task<ActionResult<Expense>> PostExpense(CreateExpenseRequest expenseDto)
         {
-            var personId = GetCurrentPersonId();
+            var personId = _authorizationHelper.GetCurrentPersonId();
 
-            if (personId == null)
-            {
-                return Unauthorized(new { message = "Invalid token" });
-            }
+            if (personId == null) return Unauthorized(new { message = "Invalid token" });
 
             var group = await _context.Groups.FindAsync(expenseDto.GroupId);
-            if (group == null)
-            {
-                return BadRequest(new { message = "Invalid GroupId, group does not exist." });
-            }
+
+            if (group == null) return BadRequest(new { message = "Invalid GroupId, group does not exist." });
 
             var isPersonInGroup = await _context.PersonGroups
                 .AnyAsync(gu => gu.GroupId == expenseDto.GroupId && gu.PersonId == personId);
 
-            if (!isPersonInGroup)
-            {
-                return Forbid("You are not a member of this group.");
-            }
+            if (!isPersonInGroup) return Forbid("You are not a member of this group.");
 
             var expense = new Expense
             {
@@ -95,18 +84,6 @@ namespace debt_collector_api.Controllers
             await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetExpense", new { id = expense.Id }, expense);
-        }
-
-        private int? GetCurrentPersonId()
-        {
-            var nameIdentifierClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
-
-            if (nameIdentifierClaim != null)
-            {
-                return int.Parse(nameIdentifierClaim.Value);
-            }
-
-            return null;
         }
     }
 }

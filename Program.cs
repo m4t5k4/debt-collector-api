@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using debt_collector_api.Data;
+using debt_collector_api.Helpers;
 
 const string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 
@@ -17,6 +18,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSignalR();
 
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<AuthorizationHelper>();
 // SQL DB
 builder.Services.AddDbContext<DebtCollectorContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DebtCollectorContext") ?? throw new InvalidOperationException("Connection string 'debt-collector-context' not found.")));

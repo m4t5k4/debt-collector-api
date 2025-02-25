@@ -9,6 +9,7 @@ using debt_collector_api.Data;
 using debt_collector_api.Models;
 using System.Security.Claims;
 using debt_collector_api.Requests;
+using debt_collector_api.Helpers;
 
 namespace debt_collector_api.Controllers
 {
@@ -17,10 +18,15 @@ namespace debt_collector_api.Controllers
     public class OrdersController : ControllerBase
     {
         private readonly DebtCollectorContext _context;
+        private readonly AuthorizationHelper _authorizationHelper;
 
-        public OrdersController(DebtCollectorContext context)
+        public OrdersController(
+            DebtCollectorContext context,
+            AuthorizationHelper authorizationHelper
+            )
         {
             _context = context;
+            _authorizationHelper = authorizationHelper;
         }
 
         [HttpGet]
@@ -32,68 +38,47 @@ namespace debt_collector_api.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<Order>> GetOrder(int id)
         {
+            var personId = _authorizationHelper.GetCurrentPersonId();
+
+            if (personId == null) return Unauthorized(new { message = "Invalid token" });
+
             var order = await _context.Orders
                 .Include(o => o.Payers)
                 .Include(o => o.Debtors)
                 .FirstOrDefaultAsync(o => o.Id == id);
 
-            if (order == null)
-            {
-                return NotFound();
-            }
+            if (order == null) return NotFound(new { message = "Order not found" });
+
+            var expense = await _context.Expenses.FirstOrDefaultAsync(e => e.Id == order.ExpenseId);
+
+            if (expense == null) return NotFound(new { message = "Order is not part of an expense" });
+
+            var isPersonInGroup = await _context.PersonGroups
+                .AnyAsync(pg => pg.PersonId == personId && pg.GroupId == expense.GroupId);
+
+            if (!isPersonInGroup) return Forbid();
 
             return order;
-        }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutOrder(int id, Order order)
-        {
-            if (id != order.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(order).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                
-            }
-
-            return NoContent();
         }
 
         [HttpPost]
         public async Task<ActionResult<Order>> PostOrder(CreateOrderRequest createOrderRequest)
         {
-            var personId = GetCurrentPersonId();
+            var personId = _authorizationHelper.GetCurrentPersonId();
 
-            if (personId == null)
-            {
-                return Unauthorized(new { message = "Invalid token" });
-            }
+            if (personId == null) return Unauthorized(new { message = "Invalid token" });
 
             var expense = await _context.Expenses
                 .Include(e => e.Group)
                 .Where(e => e.Id == createOrderRequest.ExpenseId)
                 .FirstOrDefaultAsync();
 
-            if (expense == null)
-            {
-                return NotFound(new { message = "Expense not found" });
-            }
+            if (expense == null) return NotFound(new { message = "Expense not found" });
 
             var isPersonInGroup = await _context.PersonGroups
                 .AnyAsync(pg => pg.PersonId == personId && pg.GroupId == expense.GroupId);
 
-            if (!isPersonInGroup)
-            {
-                return Forbid();
-            }
+            if (!isPersonInGroup) return Forbid();
 
             Order newOrder = new() 
             {
@@ -160,18 +145,6 @@ namespace debt_collector_api.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
-        }
-
-        private int? GetCurrentPersonId()
-        {
-            var nameIdentifierClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
-
-            if (nameIdentifierClaim != null)
-            {
-                return int.Parse(nameIdentifierClaim.Value);
-            }
-
-            return null;
         }
     }
 }

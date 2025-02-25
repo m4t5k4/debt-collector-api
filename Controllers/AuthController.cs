@@ -1,14 +1,9 @@
 ﻿using debt_collector_api.Data;
+using debt_collector_api.Helpers;
 using debt_collector_api.Models;
 using debt_collector_api.Requests;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace debt_collector_api.Controllers
 {
@@ -17,41 +12,36 @@ namespace debt_collector_api.Controllers
     public class AuthController : ControllerBase
     {
         private readonly DebtCollectorContext _context;
-        private readonly IConfiguration _configuration;
+        private readonly AuthorizationHelper _authorizationHelper;
 
-        public AuthController(DebtCollectorContext context, IConfiguration configuration)
+        public AuthController(
+            DebtCollectorContext context,
+            AuthorizationHelper authorizationHelper
+            )
         {
             _context = context;
-            _configuration = configuration;
+            _authorizationHelper = authorizationHelper;
         }
 
         [HttpPost("login")]
         public async Task<ActionResult> Login([FromBody] LoginRequest model)
         {
             if (model == null || string.IsNullOrWhiteSpace(model.Username) || string.IsNullOrWhiteSpace(model.Password))
-            {
                 return BadRequest(new { message = "Invalid request" });
-            }
 
             var person = await _context.Persons
                 .Where(p => p.Username == model.Username)
                 .FirstOrDefaultAsync();
 
-            if (person == null)
-            {
-                return Unauthorized(new { message = "Invalid user" });
-            }
+            if (person == null) return Unauthorized(new { message = "Invalid user" });
 
             bool isPasswordCorrect = BCrypt.Net.BCrypt.Verify(model.Password, person.Password);
 
-            if (!isPasswordCorrect)
-            {
-                return Unauthorized(new { message = "Invalid password" });
-            }
+            if (!isPasswordCorrect) return Unauthorized(new { message = "Invalid password" });
 
-            var token = GenerateJwtToken(person);
+            var token = _authorizationHelper.GenerateJwtToken(person);
 
-            var refreshToken = GenerateRefreshToken();
+            var refreshToken = _authorizationHelper.GenerateRefreshToken();
 
             var storedToken = new RefreshToken
             {
@@ -69,26 +59,17 @@ namespace debt_collector_api.Controllers
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
-            var userId = GetCurrentPersonId();
+            var userId = _authorizationHelper.GetCurrentPersonId();
 
-            if (userId == null)
-            {
-                return Unauthorized(new { message = "Invalid token" });
-            }
+            if (userId == null) return Unauthorized(new { message = "Invalid token" });
 
             var person = await _context.Persons.FirstOrDefaultAsync(p => p.Id == userId);
 
-            if (person == null)
-            {
-                return NotFound(new { message = "User not found" });
-            }
+            if (person == null) return NotFound(new { message = "User not found" });
 
             var refreshTokens = _context.RefreshTokens.Where(rt => rt.PersonId == userId);
 
-            if (!refreshTokens.Any())
-            {
-                return NotFound(new { message = "No active refresh tokens found" });
-            }
+            if (!refreshTokens.Any()) return NotFound(new { message = "No active refresh tokens found" });
 
             _context.RefreshTokens.RemoveRange(refreshTokens);
             await _context.SaveChangesAsync();
@@ -109,54 +90,17 @@ namespace debt_collector_api.Controllers
                 return Unauthorized(new { message = "Refresh token is invalid or expired" });
 
             var person = await _context.Persons.FindAsync(storedToken.PersonId);
+
             if (person == null) return Unauthorized(new { message = "User not found" });
 
-            var newJwt = GenerateJwtToken(person);
-            var newRefreshToken = GenerateRefreshToken();
+            var newJwt = _authorizationHelper.GenerateJwtToken(person);
+            var newRefreshToken = _authorizationHelper.GenerateRefreshToken();
 
             storedToken.Token = newRefreshToken;
             storedToken.Expiration = DateTime.UtcNow.AddDays(7);
             await _context.SaveChangesAsync();
 
             return Ok(new { token = newJwt, refreshToken = newRefreshToken });
-        }
-
-        private int? GetCurrentPersonId()
-        {
-            var nameIdentifierClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
-
-            if (nameIdentifierClaim != null)
-            {
-                return int.Parse(nameIdentifierClaim.Value);
-            }
-
-            return null;
-        }
-
-        private string GenerateJwtToken(Person person)
-        {
-            var key = Encoding.UTF8.GetBytes(_configuration["Jwt_Key"]);
-            var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.NameIdentifier, person.Id.ToString()),
-            new Claim(ClaimTypes.Name, person.Username)
-        };
-
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddMinutes(30),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
-
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
-        }
-
-        private string GenerateRefreshToken()
-        {
-            return Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
         }
     }
 }
