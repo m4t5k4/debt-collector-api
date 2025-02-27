@@ -46,6 +46,12 @@ namespace debt_collector_api.Data
                 .HasForeignKey(pb => pb.PersonId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            modelBuilder.Entity<Payer>()
+                .HasOne(p => p.Order)
+                .WithMany(o => o.Payers)
+                .HasForeignKey(p => p.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             modelBuilder.Entity<Debtor>()
                 .HasOne(s => s.Person)
                 .WithMany()

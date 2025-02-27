@@ -10,6 +10,7 @@ using debt_collector_api.Models;
 using System.Security.Claims;
 using debt_collector_api.Requests;
 using debt_collector_api.Helpers;
+using debt_collector_api.Responses;
 
 namespace debt_collector_api.Controllers
 {
@@ -80,7 +81,7 @@ namespace debt_collector_api.Controllers
 
             if (!isPersonInGroup) return Forbid();
 
-            Order newOrder = new() 
+            Order newOrder = new()
             {
                 Id = createOrderRequest.Id,
                 ExpenseId = expense.Id,
@@ -114,7 +115,7 @@ namespace debt_collector_api.Controllers
             }
             foreach (var debtor in createOrderRequest.Debtors)
             {
-                Debtor newDebtor = new() 
+                Debtor newDebtor = new()
                 {
                     Id = 0,
                     PersonId = debtor.PersonId,
@@ -132,14 +133,65 @@ namespace debt_collector_api.Controllers
             return CreatedAtAction("GetOrder", new { id = createOrderRequest.Id }, createOrderRequest);
         }
 
+        [HttpPut("{orderId}")]
+        public async Task<IActionResult> UpdateOrder(int orderId, [FromBody] OrderDTO updateOrderDto)
+        {
+            var personId = _authorizationHelper.GetCurrentPersonId();
+
+            if (personId == null) return Unauthorized(new { message = "Invalid token" });
+
+            var order = await _context.Orders
+                .Include(o => o.Payers)
+                .Include(o => o.Debtors)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+
+            if (order == null) return NotFound(new { message = "Order not found" });
+
+            _context.Payers.RemoveRange(order.Payers);
+            _context.Debtors.RemoveRange(order.Debtors);
+
+            order.Name = updateOrderDto.Name;
+            order.TotalCost = updateOrderDto.TotalCost;
+            order.Payers = updateOrderDto.Payers.Select(p => new Payer
+            {
+                Id = 0,
+                PersonId = p.PersonId,
+                OrderId = p.OrderId,
+                Value = p.Value,
+                CreatedByPersonId = personId ?? 0,
+                CreatedOn = DateTime.UtcNow,
+                ModifiedByPersonId = personId ?? 0,
+                ModifiedOn = DateTime.UtcNow
+            }).ToList();
+            order.Debtors = updateOrderDto.Debtors.Select(d => new Debtor
+            {
+                Id = 0,
+                PersonId = d.PersonId,
+                OrderId = d.OrderId,
+                Value = d.Value,
+                HasPaid = d.HasPaid,
+                CreatedByPersonId = personId ?? 0,
+                CreatedOn = DateTime.UtcNow,
+                ModifiedByPersonId = personId ?? 0,
+                ModifiedOn = DateTime.UtcNow
+            }).ToList();
+            order.ModifiedOn = DateTime.UtcNow;
+            order.ModifiedByPersonId = personId ?? 0;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(order);
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteOrder(int id)
         {
+            var personId = _authorizationHelper.GetCurrentPersonId();
+
+            if (personId == null) return Unauthorized(new { message = "Invalid token" });
+
             var order = await _context.Orders.FindAsync(id);
-            if (order == null)
-            {
-                return NotFound();
-            }
+            if (order == null) return NotFound();
 
             _context.Orders.Remove(order);
             await _context.SaveChangesAsync();
