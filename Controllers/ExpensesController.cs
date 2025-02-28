@@ -10,6 +10,7 @@ using debt_collector_api.Models;
 using System.Security.Claims;
 using debt_collector_api.Requests;
 using debt_collector_api.Helpers;
+using debt_collector_api.Responses;
 
 namespace debt_collector_api.Controllers
 {
@@ -84,6 +85,43 @@ namespace debt_collector_api.Controllers
             await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetExpense", new { id = expense.Id }, expense);
+        }
+
+        [HttpPut("{expenseId}")]
+        public async Task<IActionResult> UpdateExpense(int expenseId, [FromBody] ExpenseDTO updatedExpenseDto)
+        {
+            var personId = _authorizationHelper.GetCurrentPersonId();
+
+            if (personId == null) return Unauthorized(new { message = "Invalid token" });
+
+            var expense = await _context.Expenses
+                .FirstOrDefaultAsync(e => e.Id == expenseId);
+
+            if (expense == null) return NotFound(new { message = "Expense not found" });
+
+            expense.Name = updatedExpenseDto.Name;
+            expense.ModifiedOn = DateTime.UtcNow;
+            expense.ModifiedByPersonId = personId.Value;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(expense);
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteExpense(int id)
+        {
+            var personId = _authorizationHelper.GetCurrentPersonId();
+
+            if (personId == null) return Unauthorized(new { message = "Invalid token" });
+
+            var expense = await _context.Expenses.FindAsync(id);
+            if (expense == null) return NotFound();
+
+            _context.Expenses.Remove(expense);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
         }
     }
 }
