@@ -228,5 +228,27 @@ namespace debt_collector_api.Controllers
 
             return CreatedAtAction("GetGroup", new { id = @group.Id }, @group);
         }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteGroup(int id)
+        {
+            var personId = _authorizationHelper.GetCurrentPersonId();
+
+            if (personId == null) return Unauthorized(new { message = "Invalid token" });
+
+            var group = await _context.Groups
+                .Include(g => g.PersonGroups)
+                .FirstOrDefaultAsync(g => g.Id == id);
+
+            if (group == null) return NotFound(new { message = "Group not found"});
+
+            _context.PersonGroups.RemoveRange(group.PersonGroups);
+
+            _context.Groups.Remove(group);
+
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
     }
 }

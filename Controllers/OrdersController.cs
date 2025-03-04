@@ -191,9 +191,11 @@ namespace debt_collector_api.Controllers
             if (personId == null) return Unauthorized(new { message = "Invalid token" });
 
             var order = await _context.Orders.FindAsync(id);
+
             if (order == null) return NotFound();
 
             _context.Orders.Remove(order);
+
             await _context.SaveChangesAsync();
 
             return NoContent();
