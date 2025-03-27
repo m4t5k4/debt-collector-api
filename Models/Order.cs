@@ -11,5 +11,7 @@ namespace debt_collector_api.Models
         public decimal TotalCost { get; set; }
         public List<Debtor> Debtors { get; set; } = [];
         public List<Payer> Payers { get; set; } = [];
+        public int? ImageId { get; set; }
+        public Image? Image { get; set; }
     }
 }

@@ -17,10 +17,13 @@ namespace debt_collector_api.Data
         public DbSet<Person> Persons { get; set; } = default!;
         public DbSet<PersonGroup> PersonGroups { get; set; } = default!;
         public DbSet<Debtor> Debtors { get; set; } = default!;
-        public DbSet<RefreshToken> RefreshTokens { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; } = default!;
+        public DbSet<Image> Images { get; set; } = default!;
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // PersonGroup
             modelBuilder.Entity<PersonGroup>()
                 .HasKey(pg => new { pg.PersonId, pg.GroupId });
 
@@ -34,12 +37,14 @@ namespace debt_collector_api.Data
                 .WithMany(g => g.PersonGroups)
                 .HasForeignKey(pg => pg.GroupId);
 
+            // Order > Expenses
             modelBuilder.Entity<Order>()
                 .HasOne(o => o.Expense)
                 .WithMany(e => e.Orders)
                 .HasForeignKey(o => o.ExpenseId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // Debtor & Payer
             modelBuilder.Entity<Payer>()
                 .HasOne(pb => pb.Person)
                 .WithMany()
@@ -63,6 +68,31 @@ namespace debt_collector_api.Data
                 .WithMany(o => o.Debtors)
                 .HasForeignKey(s => s.OrderId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Image
+            modelBuilder.Entity<Person>()
+                .HasOne(p => p.Image)
+                .WithMany()
+                .HasForeignKey(p => p.ImageId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<Order>()
+                .HasOne(o => o.Image)
+                .WithMany()
+                .HasForeignKey(o => o.ImageId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<Expense>()
+                .HasOne(e => e.Image)
+                .WithMany()
+                .HasForeignKey(e => e.ImageId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<Group>()
+                .HasOne(g => g.Image)
+                .WithMany()
+                .HasForeignKey(g => g.ImageId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

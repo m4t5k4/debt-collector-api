@@ -10,5 +10,7 @@ namespace debt_collector_api.Models
         public string Name { get; set; }
         public List<Order> Orders { get; set; } = [];
         public string Currency { get; set; } = "EUR";
+        public int? ImageId { get; set; }
+        public Image? Image { get; set; }
     }
 }

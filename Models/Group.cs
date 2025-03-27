@@ -9,6 +9,8 @@ namespace debt_collector_api.Models
         public string Password { get; set; }
         public List<PersonGroup> PersonGroups { get; set; } = [];
         public List<Expense> Expenses { get; set; } = [];
+        public int? ImageId { get; set; }
+        public Image? Image { get; set; }
 
     }
 }

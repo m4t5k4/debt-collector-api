@@ -6,5 +6,6 @@ namespace debt_collector_api.Responses
     {
         public int Id { get; set; }
         public string Username { get; set; }
+        public Image? Image { get; set; }
     }
 }

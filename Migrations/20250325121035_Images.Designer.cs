@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using debt_collector_api.Data;
 
@@ -11,9 +12,11 @@ using debt_collector_api.Data;
 namespace debt_collector_api.Migrations
 {
     [DbContext(typeof(DebtCollectorContext))]
-    partial class DebtCollectorContextModelSnapshot : ModelSnapshot
+    [Migration("20250325121035_Images")]
+    partial class Images
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -101,7 +104,9 @@ namespace debt_collector_api.Migrations
 
                     b.HasIndex("GroupId");
 
-                    b.HasIndex("ImageId");
+                    b.HasIndex("ImageId")
+                        .IsUnique()
+                        .HasFilter("[ImageId] IS NOT NULL");
 
                     b.ToTable("Expenses");
                 });
@@ -139,7 +144,9 @@ namespace debt_collector_api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ImageId");
+                    b.HasIndex("ImageId")
+                        .IsUnique()
+                        .HasFilter("[ImageId] IS NOT NULL");
 
                     b.ToTable("Groups");
                 });
@@ -201,7 +208,9 @@ namespace debt_collector_api.Migrations
 
                     b.HasIndex("ExpenseId");
 
-                    b.HasIndex("ImageId");
+                    b.HasIndex("ImageId")
+                        .IsUnique()
+                        .HasFilter("[ImageId] IS NOT NULL");
 
                     b.HasIndex("PersonId");
 
@@ -279,7 +288,9 @@ namespace debt_collector_api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ImageId");
+                    b.HasIndex("ImageId")
+                        .IsUnique()
+                        .HasFilter("[ImageId] IS NOT NULL");
 
                     b.ToTable("Persons");
                 });
@@ -362,8 +373,8 @@ namespace debt_collector_api.Migrations
                         .IsRequired();
 
                     b.HasOne("debt_collector_api.Models.Image", "Image")
-                        .WithMany()
-                        .HasForeignKey("ImageId")
+                        .WithOne()
+                        .HasForeignKey("debt_collector_api.Models.Expense", "ImageId")
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Group");
@@ -374,8 +385,8 @@ namespace debt_collector_api.Migrations
             modelBuilder.Entity("debt_collector_api.Models.Group", b =>
                 {
                     b.HasOne("debt_collector_api.Models.Image", "Image")
-                        .WithMany()
-                        .HasForeignKey("ImageId")
+                        .WithOne()
+                        .HasForeignKey("debt_collector_api.Models.Group", "ImageId")
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Image");
@@ -390,8 +401,8 @@ namespace debt_collector_api.Migrations
                         .IsRequired();
 
                     b.HasOne("debt_collector_api.Models.Image", "Image")
-                        .WithMany()
-                        .HasForeignKey("ImageId")
+                        .WithOne()
+                        .HasForeignKey("debt_collector_api.Models.Order", "ImageId")
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("debt_collector_api.Models.Person", null)
@@ -425,8 +436,8 @@ namespace debt_collector_api.Migrations
             modelBuilder.Entity("debt_collector_api.Models.Person", b =>
                 {
                     b.HasOne("debt_collector_api.Models.Image", "Image")
-                        .WithMany()
-                        .HasForeignKey("ImageId")
+                        .WithOne()
+                        .HasForeignKey("debt_collector_api.Models.Person", "ImageId")
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Image");

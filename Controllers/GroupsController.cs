@@ -57,6 +57,7 @@ namespace debt_collector_api.Controllers
                 .Include(g => g.Expenses)
                 .Include(g => g.PersonGroups)
                 .ThenInclude(pg => pg.Person)
+                .ThenInclude(p => p.Image)
                 .Select(g => new GroupDTO
                 {
                     Id = g.Id,
@@ -115,6 +116,7 @@ namespace debt_collector_api.Controllers
                     {
                         Id = pg.Person.Id,
                         Username = pg.Person.Username,
+                        Image = pg.Person.Image,
                     }).ToList()
                 }).FirstOrDefaultAsync();
                 

@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using debt_collector_api.Data;
 using debt_collector_api.Models;
-using System.Security.Claims;
+using debt_collector_api.Helpers;
 using debt_collector_api.Responses;
 
 namespace debt_collector_api.Controllers
@@ -12,10 +12,15 @@ namespace debt_collector_api.Controllers
     public class PeopleController : ControllerBase
     {
         private readonly DebtCollectorContext _context;
+        private readonly AuthorizationHelper _authorizationHelper;
 
-        public PeopleController(DebtCollectorContext context)
+        public PeopleController(
+            DebtCollectorContext context, 
+            AuthorizationHelper authorizationHelper
+            )
         {
             _context = context;
+            _authorizationHelper = authorizationHelper;
         }
 
         // GET: api/People
@@ -27,16 +32,29 @@ namespace debt_collector_api.Controllers
 
         // GET: api/People/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Person>> GetPerson(int id)
+        public async Task<ActionResult<PersonDTO>> GetPerson(int id)
         {
-            var person = await _context.Persons.FindAsync(id);
+            var personId = _authorizationHelper.GetCurrentPersonId();
+
+            if (personId == null || personId != id) return Unauthorized(new { message = "Invalid token" });
+
+            var person = await _context.Persons
+                .Include(p => p.Image)
+                .FirstOrDefaultAsync(p => p.Id == id);
 
             if (person == null)
             {
                 return NotFound();
             }
 
-            return person;
+            PersonDTO personDTO = new()
+            {
+                Id = person.Id,
+                Username = person.Username,
+                Image = person.Image
+            };
+
+            return personDTO;
         }
 
         // POST: api/People
@@ -52,22 +70,14 @@ namespace debt_collector_api.Controllers
             }
 
             person.Password = BCrypt.Net.BCrypt.HashPassword(person.Password);
+            var dummyAvatar = await _context.Images
+                .FirstOrDefaultAsync(i => i.Id == 1);
+            if (dummyAvatar != null) person.Image = dummyAvatar;
+
             _context.Persons.Add(person);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetPerson", new { id = person.Id }, person);
-        }
-
-        private int? GetCurrentPersonId()
-        {
-            var nameIdentifierClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
-
-            if (nameIdentifierClaim != null)
-            {
-                return int.Parse(nameIdentifierClaim.Value);
-            }
-
-            return null;
         }
     }
 }
