@@ -6,7 +6,8 @@ using debt_collector_api.Data;
 using debt_collector_api.Helpers;
 using debt_collector_api.Services;
 
-const string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+const string DevelopmentCorsPolicy = "_developmentCorsPolicy";
+const string ProductionCorsPolicy = "_productionCorsPolicy";
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,7 +30,7 @@ builder.Services.AddDbContext<DebtCollectorContext>(options =>
 // CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(name: MyAllowSpecificOrigins,
+    options.AddPolicy(name: DevelopmentCorsPolicy,
                       policy =>
                       {
                           policy.WithOrigins("http://localhost:4200")
@@ -38,6 +39,15 @@ builder.Services.AddCors(options =>
                             .AllowAnyMethod();
 
                       });
+
+    options.AddPolicy(ProductionCorsPolicy, 
+                    policy =>
+                    {
+                        policy.WithOrigins("https://mango-hill-0c87c8803.4.azurestaticapps.net")
+                            .AllowCredentials()
+                            .AllowAnyHeader()
+                            .AllowAnyMethod();
+                    });
 });
 
 // JWT
@@ -62,7 +72,10 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseCors(MyAllowSpecificOrigins);
+    app.UseCors(DevelopmentCorsPolicy);
+} else
+{
+    app.UseCors(ProductionCorsPolicy);
 }
 
 app.UseHttpsRedirection();
