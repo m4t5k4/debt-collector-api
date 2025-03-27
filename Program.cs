@@ -7,7 +7,6 @@ using debt_collector_api.Helpers;
 using debt_collector_api.Services;
 
 const string DevelopmentCorsPolicy = "_developmentCorsPolicy";
-const string ProductionCorsPolicy = "_productionCorsPolicy";
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,15 +38,6 @@ builder.Services.AddCors(options =>
                             .AllowAnyMethod();
 
                       });
-
-    options.AddPolicy(ProductionCorsPolicy, 
-                    policy =>
-                    {
-                        policy.WithOrigins("https://mango-hill-0c87c8803.4.azurestaticapps.net")
-                            .AllowCredentials()
-                            .AllowAnyHeader()
-                            .AllowAnyMethod();
-                    });
 });
 
 // JWT
@@ -73,9 +63,6 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseCors(DevelopmentCorsPolicy);
-} else
-{
-    app.UseCors(ProductionCorsPolicy);
 }
 
 app.UseHttpsRedirection();
