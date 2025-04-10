@@ -28,15 +28,15 @@ namespace debt_collector_api.Helpers
 
         public int? GetCurrentPersonId()
         {
-            var personIdClaim = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            string personIdClaim = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             return int.TryParse(personIdClaim, out int personId) ? personId : null;
         }
 
         public async Task<string> GenerateUniqueRandomPasswordAsync(int length)
         {
             string password;
-            var isUnique = false;
-            var random = new Random();
+            bool isUnique = false;
+            Random random = new Random();
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
             do
@@ -54,14 +54,14 @@ namespace debt_collector_api.Helpers
 
         public string GenerateJwtToken(Person person)
         {
-            var key = Encoding.UTF8.GetBytes(_configuration["Jwt_Key"]);
-            var claims = new List<Claim>
+            byte[] key = Encoding.UTF8.GetBytes(_configuration["Jwt_Key"]);
+            List<Claim> claims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, person.Id.ToString()),
-            new Claim(ClaimTypes.Name, person.Username)
+            new(ClaimTypes.NameIdentifier, person.Id.ToString()),
+            new(ClaimTypes.Name, person.Username)
         };
 
-            var tokenDescriptor = new SecurityTokenDescriptor
+            SecurityTokenDescriptor tokenDescriptor = new()
             {
                 Subject = new ClaimsIdentity(claims),
                 Expires = DateTime.UtcNow.AddMinutes(30),

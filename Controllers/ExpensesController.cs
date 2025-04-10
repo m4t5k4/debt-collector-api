@@ -40,6 +40,7 @@ namespace debt_collector_api.Controllers
 
             var expense = await _context.Expenses
                 .Include(e => e.Orders)
+                .Include(e => e.Image)
                 .Where(e => e.Id == id)
                 .FirstOrDefaultAsync();
 
