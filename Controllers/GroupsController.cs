@@ -54,6 +54,7 @@ namespace debt_collector_api.Controllers
 
             var @group = await _context.Groups
                 .Where(g => g.Id == id)
+                .Include(g => g.Image)
                 .Include(g => g.Expenses)
                 .Include(g => g.PersonGroups)
                 .ThenInclude(pg => pg.Person)
@@ -63,6 +64,7 @@ namespace debt_collector_api.Controllers
                     Id = g.Id,
                     Name = g.Name,
                     Password = g.Password,
+                    Image = g.Image ?? null,
                     CreatedOn = g.CreatedOn,
                     CreatedByPersonId = g.CreatedByPersonId,
                     ModifiedOn = g.ModifiedOn,
@@ -251,6 +253,29 @@ namespace debt_collector_api.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        [HttpDelete("{groupId}/members/{personId}")]
+        public async Task<IActionResult> RemoveMemberFromGroup(int groupId, int personId)
+        {
+            var currentPersonId = _authorizationHelper.GetCurrentPersonId();
+
+            if (currentPersonId == null) return Unauthorized(new { message = "Invalid token" });
+
+            var group = await _context.Groups
+                .Include(g => g.PersonGroups)
+                .FirstOrDefaultAsync(g => g.Id == groupId);
+
+            if (group == null) return NotFound(new { message = "Group not found" });
+
+            var personGroup = group.PersonGroups.FirstOrDefault(pg => pg.PersonId == personId);
+            if (personGroup == null)
+                return NotFound(new { message = "Member not found in this group" });
+
+            _context.PersonGroups.Remove(personGroup);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Member removed successfully" });
         }
     }
 }

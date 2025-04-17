@@ -9,5 +9,6 @@ namespace debt_collector_api.Responses
         public string Password { get; set; } = string.Empty;
         public List<ExpenseDTO> Expenses { get; set; } = [];
         public List<PersonDTO> People { get; set; } = [];
+        public Image? Image { get; set; }
     }
 }

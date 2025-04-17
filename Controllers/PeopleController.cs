@@ -69,6 +69,11 @@ namespace debt_collector_api.Controllers
                 return BadRequest(new { message = "Username is already taken." });
             }
 
+            if (string.IsNullOrWhiteSpace(person.Password))
+            {
+                return BadRequest(new { message = "Password is required." });
+            }
+
             person.Password = BCrypt.Net.BCrypt.HashPassword(person.Password);
             var dummyAvatar = await _context.Images
                 .FirstOrDefaultAsync(i => i.Id == 1);
@@ -78,6 +83,21 @@ namespace debt_collector_api.Controllers
             await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetPerson", new { id = person.Id }, person);
+        }
+
+        // GET: api/People/CheckUsername?username=someUsername
+        [HttpGet("CheckUsername")]
+        public async Task<ActionResult<bool>> CheckUsernameAvailability([FromQuery] string username)
+        {
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                return BadRequest(new { message = "Username is required." });
+            }
+
+            var isTaken = await _context.Persons
+                .AnyAsync(p => p.Username.ToLower() == username.ToLower());
+
+            return Ok(!isTaken);
         }
     }
 }

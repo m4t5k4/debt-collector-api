@@ -1,6 +1,7 @@
 ﻿using debt_collector_api.Data;
 using debt_collector_api.Helpers;
 using debt_collector_api.Models;
+using debt_collector_api.Requests;
 using debt_collector_api.Responses;
 using debt_collector_api.Services;
 using Microsoft.AspNetCore.Http;
@@ -109,6 +110,97 @@ namespace debt_collector_api.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new ImageDTO {Id = image.Id, Url = image.Url });
+        }
+
+        [HttpPost("group/{groupId}")]
+        public async Task<IActionResult> UploadGroupImage([FromRoute] int orderId, [FromForm] IFormFile file)
+        {
+            var personId = _authorizationHelper.GetCurrentPersonId();
+
+            if (personId == null) return Unauthorized(new { message = "Invalid token" });
+
+            if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
+
+            var allowedImageTypes = new[] { "image/jpeg", "image/png", "image/gif", "image/webp" };
+            if (!allowedImageTypes.Contains(file.ContentType.ToLower()))
+                return BadRequest("Only image files (JPEG, PNG, GIF, WEBP) are allowed.");
+
+            var group = await _context.Groups.FindAsync(orderId);
+            if (group == null) return NotFound(new { message = "Group not found." });
+
+            var isPersonInGroup = await _context.PersonGroups
+                .AnyAsync(pg => pg.PersonId == personId && pg.GroupId == group.Id);
+
+            if (!isPersonInGroup) return Forbid();
+
+            var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+            var uniqueFileName = $"{Path.GetFileNameWithoutExtension(file.FileName)}_{timestamp}{Path.GetExtension(file.FileName)}";
+
+            await using var fileStream = file.OpenReadStream();
+            var blobUrl = await _blobStorageService.UploadImageAsync(uniqueFileName, fileStream);
+
+            var oldImage = await _context.Images.FindAsync(group.ImageId);
+            if (oldImage != null)
+            {
+                await _blobStorageService.DeleteImageAsync(oldImage.Url);
+                _context.Images.Remove(oldImage);
+            }
+
+            var image = new Image { Url = blobUrl };
+            _context.Images.Add(image);
+            await _context.SaveChangesAsync();
+
+            group.ImageId = image.Id;
+            await _context.SaveChangesAsync();
+
+            return Ok(new ImageDTO { Id = image.Id, Url = image.Url });
+        }
+
+        [HttpPost("order/{orderId}")]
+        public async Task<IActionResult> UploadOrderImage([FromRoute] int orderId, [FromForm] IFormFile file)
+        {
+            var personId = _authorizationHelper.GetCurrentPersonId();
+
+            if (personId == null) return Unauthorized(new { message = "Invalid token" });
+
+            if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
+
+            var allowedImageTypes = new[] { "image/jpeg", "image/png", "image/gif", "image/webp" };
+            if (!allowedImageTypes.Contains(file.ContentType.ToLower()))
+                return BadRequest("Only image files (JPEG, PNG, GIF, WEBP) are allowed.");
+
+            var order = await _context.Orders.FindAsync(orderId);
+            if (order == null) return NotFound(new { message = "Order not found." });
+
+            var expense = await _context.Expenses.FindAsync(order.ExpenseId);
+            if (expense == null) return NotFound(new { message = "Expense not found" });
+
+            var isPersonInGroup = await _context.PersonGroups
+                .AnyAsync(pg => pg.PersonId == personId && pg.GroupId == expense.GroupId);
+
+            if (!isPersonInGroup) return Forbid();
+
+            var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+            var uniqueFileName = $"{Path.GetFileNameWithoutExtension(file.FileName)}_{timestamp}{Path.GetExtension(file.FileName)}";
+
+            await using var fileStream = file.OpenReadStream();
+            var blobUrl = await _blobStorageService.UploadImageAsync(uniqueFileName, fileStream);
+
+            var oldImage = await _context.Images.FindAsync(order.ImageId);
+            if (oldImage != null)
+            {
+                await _blobStorageService.DeleteImageAsync(oldImage.Url);
+                _context.Images.Remove(oldImage);
+            }
+
+            var image = new Image { Url = blobUrl };
+            _context.Images.Add(image);
+            await _context.SaveChangesAsync();
+
+            order.ImageId = image.Id;
+            await _context.SaveChangesAsync();
+
+            return Ok(new ImageDTO { Id = image.Id, Url = image.Url });
         }
 
         [HttpDelete("{imageId}")]

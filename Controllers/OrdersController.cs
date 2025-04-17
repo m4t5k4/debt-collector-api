@@ -44,6 +44,7 @@ namespace debt_collector_api.Controllers
             if (personId == null) return Unauthorized(new { message = "Invalid token" });
 
             var order = await _context.Orders
+                .Include(o => o.Image)
                 .Include(o => o.Payers)
                 .Include(o => o.Debtors)
                 .FirstOrDefaultAsync(o => o.Id == id);
