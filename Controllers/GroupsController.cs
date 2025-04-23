@@ -74,6 +74,7 @@ namespace debt_collector_api.Controllers
                         Id = e.Id,
                         GroupId = e.GroupId,
                         Name = e.Name,
+                        Image = e.Image ?? null,
                         Currency = e.Currency,
                         CreatedOn = e.CreatedOn,
                         CreatedByPersonId = e.CreatedByPersonId,
@@ -137,6 +138,8 @@ namespace debt_collector_api.Controllers
 
             var groups = await _context.PersonGroups
                 .Where(pg => pg.PersonId == personId)
+                .Include(pg => pg.Group)
+                .ThenInclude(g => g.Image)
                 .Select(pg => pg.Group)
                 .ToListAsync();
 

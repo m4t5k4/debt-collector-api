@@ -9,5 +9,6 @@ namespace debt_collector_api.Responses
         public string Name { get; set; }
         public List<OrderDTO> Orders { get; set; } = [];
         public string Currency { get; set; } = "EUR";
+        public Image? Image { get; set; }
     }
 }

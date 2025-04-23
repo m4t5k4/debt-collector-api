@@ -1,13 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using debt_collector_api.Data;
 using debt_collector_api.Models;
-using System.Security.Claims;
 using debt_collector_api.Requests;
 using debt_collector_api.Helpers;
 using debt_collector_api.Responses;
@@ -40,6 +34,7 @@ namespace debt_collector_api.Controllers
 
             var expense = await _context.Expenses
                 .Include(e => e.Orders)
+                .ThenInclude(o => o.Image)
                 .Include(e => e.Image)
                 .Where(e => e.Id == id)
                 .FirstOrDefaultAsync();

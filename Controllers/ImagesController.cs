@@ -113,7 +113,7 @@ namespace debt_collector_api.Controllers
         }
 
         [HttpPost("group/{groupId}")]
-        public async Task<IActionResult> UploadGroupImage([FromRoute] int orderId, [FromForm] IFormFile file)
+        public async Task<IActionResult> UploadGroupImage([FromRoute] int groupId, [FromForm] IFormFile file)
         {
             var personId = _authorizationHelper.GetCurrentPersonId();
 
@@ -125,7 +125,7 @@ namespace debt_collector_api.Controllers
             if (!allowedImageTypes.Contains(file.ContentType.ToLower()))
                 return BadRequest("Only image files (JPEG, PNG, GIF, WEBP) are allowed.");
 
-            var group = await _context.Groups.FindAsync(orderId);
+            var group = await _context.Groups.FindAsync(groupId);
             if (group == null) return NotFound(new { message = "Group not found." });
 
             var isPersonInGroup = await _context.PersonGroups
