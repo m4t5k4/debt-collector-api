@@ -10,5 +10,6 @@ namespace debt_collector_api.Responses
         public List<OrderDTO> Orders { get; set; } = [];
         public string Currency { get; set; } = "EUR";
         public Image? Image { get; set; }
+        public decimal TotalOrdersCost { get; set; }
     }
 }

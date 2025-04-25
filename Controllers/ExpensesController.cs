@@ -71,6 +71,7 @@ namespace debt_collector_api.Controllers
                 GroupId = expenseDto.GroupId,
                 Name = expenseDto.Name,
                 Currency = expenseDto.Currency,
+                TotalOrdersCost = 0,
                 CreatedByPersonId = personId.Value,
                 ModifiedByPersonId = personId.Value,
                 CreatedOn = DateTime.UtcNow,
@@ -98,6 +99,9 @@ namespace debt_collector_api.Controllers
             expense.Name = updatedExpenseDto.Name;
             expense.ModifiedOn = DateTime.UtcNow;
             expense.ModifiedByPersonId = personId.Value;
+            expense.TotalOrdersCost = await _context.Orders
+                    .Where(o => o.ExpenseId == expenseId)
+                    .SumAsync(o => o.TotalCost);
 
             await _context.SaveChangesAsync();
 

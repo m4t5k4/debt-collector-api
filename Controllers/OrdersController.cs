@@ -1,13 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using debt_collector_api.Data;
 using debt_collector_api.Models;
-using System.Security.Claims;
 using debt_collector_api.Requests;
 using debt_collector_api.Helpers;
 using debt_collector_api.Responses;
@@ -99,36 +93,32 @@ namespace debt_collector_api.Controllers
             _context.Orders.Add(newOrder);
             await _context.SaveChangesAsync();
 
-            foreach (var payer in createOrderRequest.Payers)
+            var newPayers = createOrderRequest.Payers.Select(p => new Payer
             {
-                Payer newPayer = new()
-                {
-                    Id = 0,
-                    PersonId = payer.PersonId,
-                    OrderId = newOrder.Id,
-                    Value = payer.Value,
-                    CreatedOn = DateTime.UtcNow,
-                    CreatedByPersonId = personId ?? 0,
-                    ModifiedOn = DateTime.UtcNow,
-                    ModifiedByPersonId = personId ?? 0
-                };
-                _context.Payers.Add(newPayer);
-            }
-            foreach (var debtor in createOrderRequest.Debtors)
+                PersonId = p.PersonId,
+                OrderId = newOrder.Id,
+                Value = p.Value,
+                CreatedOn = DateTime.UtcNow,
+                CreatedByPersonId = personId ?? 0,
+                ModifiedOn = DateTime.UtcNow,
+                ModifiedByPersonId = personId ?? 0
+            });
+
+            var newDebtors = createOrderRequest.Debtors.Select(d => new Debtor
             {
-                Debtor newDebtor = new()
-                {
-                    Id = 0,
-                    PersonId = debtor.PersonId,
-                    OrderId = newOrder.Id,
-                    Value = debtor.Value,
-                    CreatedOn = DateTime.UtcNow,
-                    CreatedByPersonId = personId ?? 0,
-                    ModifiedOn = DateTime.UtcNow,
-                    ModifiedByPersonId = personId ?? 0
-                };
-                _context.Debtors.Add(newDebtor);
-            }
+                PersonId = d.PersonId,
+                OrderId = newOrder.Id,
+                Value = d.Value,
+                CreatedOn = DateTime.UtcNow,
+                CreatedByPersonId = personId ?? 0,
+                ModifiedOn = DateTime.UtcNow,
+                ModifiedByPersonId = personId ?? 0
+            });
+
+            _context.Payers.AddRange(newPayers);
+            _context.Debtors.AddRange(newDebtors);
+
+            await RecalculateExpenseTotalAsync(expense.Id);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetOrder", new { id = createOrderRequest.Id }, createOrderRequest);
@@ -179,6 +169,7 @@ namespace debt_collector_api.Controllers
             order.ModifiedOn = DateTime.UtcNow;
             order.ModifiedByPersonId = personId ?? 0;
 
+            await RecalculateExpenseTotalAsync(order.Id);
             await _context.SaveChangesAsync();
 
             return Ok(order);
@@ -191,15 +182,32 @@ namespace debt_collector_api.Controllers
 
             if (personId == null) return Unauthorized(new { message = "Invalid token" });
 
-            var order = await _context.Orders.FindAsync(id);
+            var order = await _context.Orders
+                .Include(o => o.Payers)
+                .Include(o => o.Debtors)
+                .FirstOrDefaultAsync(o => o.Id == id);
 
             if (order == null) return NotFound();
 
+            _context.Payers.RemoveRange(order.Payers);
+            _context.Debtors.RemoveRange(order.Debtors);
             _context.Orders.Remove(order);
 
+            await RecalculateExpenseTotalAsync(order.Id);
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        private async Task RecalculateExpenseTotalAsync(int expenseId)
+        {
+            var expense = await _context.Expenses.FirstOrDefaultAsync(e => e.Id == expenseId);
+            if (expense != null)
+            {
+                expense.TotalOrdersCost = await _context.Orders
+                    .Where(o => o.ExpenseId == expenseId)
+                    .SumAsync(o => o.TotalCost);
+            }
         }
     }
 }

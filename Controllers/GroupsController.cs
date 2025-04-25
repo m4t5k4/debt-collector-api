@@ -76,6 +76,7 @@ namespace debt_collector_api.Controllers
                         Name = e.Name,
                         Image = e.Image ?? null,
                         Currency = e.Currency,
+                        TotalOrdersCost = e.TotalOrdersCost,
                         CreatedOn = e.CreatedOn,
                         CreatedByPersonId = e.CreatedByPersonId,
                         ModifiedOn = e.ModifiedOn,
@@ -130,7 +131,7 @@ namespace debt_collector_api.Controllers
         }
 
         [HttpGet("my-groups")]
-        public async Task<ActionResult<List<Group>>> GetGroupsForCurrentUser()
+        public async Task<ActionResult<List<GroupDTO>>> GetGroupsForCurrentUser()
         {
             var personId = _authorizationHelper.GetCurrentPersonId();
 
@@ -139,8 +140,27 @@ namespace debt_collector_api.Controllers
             var groups = await _context.PersonGroups
                 .Where(pg => pg.PersonId == personId)
                 .Include(pg => pg.Group)
-                .ThenInclude(g => g.Image)
-                .Select(pg => pg.Group)
+                    .ThenInclude(g => g.Image)
+                .Include(pg => pg.Group)
+                    .ThenInclude(g => g.PersonGroups)
+                        .ThenInclude(pg => pg.Person)
+                .Select(pg => new GroupDTO
+                {
+                    Id = pg.Group.Id,
+                    Name = pg.Group.Name,
+                    Password = pg.Group.Password,
+                    Image = pg.Group.Image,
+                    CreatedOn = pg.Group.CreatedOn,
+                    CreatedByPersonId = pg.Group.CreatedByPersonId,
+                    ModifiedOn = pg.Group.ModifiedOn,
+                    ModifiedByPersonId = pg.Group.ModifiedByPersonId,
+                    People = pg.Group.PersonGroups.Select(pg => new PersonDTO
+                    {
+                        Id = pg.Person.Id,
+                        Username = pg.Person.Username,
+                        Image = pg.Person.Image,
+                    }).ToList()
+                })
                 .ToListAsync();
 
             if (groups == null) return NotFound(new { message = "You are not a member of any group." });

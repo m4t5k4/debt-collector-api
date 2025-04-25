@@ -12,5 +12,6 @@ namespace debt_collector_api.Models
         public string Currency { get; set; } = "EUR";
         public int? ImageId { get; set; }
         public Image? Image { get; set; }
+        public decimal TotalOrdersCost { get; set; }
     }
 }
