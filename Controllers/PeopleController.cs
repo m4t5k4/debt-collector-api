@@ -4,6 +4,7 @@ using debt_collector_api.Data;
 using debt_collector_api.Models;
 using debt_collector_api.Helpers;
 using debt_collector_api.Responses;
+using debt_collector_api.Requests;
 
 namespace debt_collector_api.Controllers
 {
@@ -51,7 +52,8 @@ namespace debt_collector_api.Controllers
             {
                 Id = person.Id,
                 Username = person.Username,
-                Image = person.Image
+                Image = person.Image,
+                PrimaryCurrency = person.PrimaryCurrency
             };
 
             return personDTO;
@@ -61,22 +63,18 @@ namespace debt_collector_api.Controllers
         [HttpPost]
         public async Task<ActionResult<Person>> PostPerson(Person person)
         {
+            if (string.IsNullOrWhiteSpace(person.Email)) return BadRequest(new { message = "Email is required." } );
+
             var existingPerson = await _context.Persons
-                .FirstOrDefaultAsync(p => p.Username.ToLower() == person.Username.ToLower());
+                .FirstOrDefaultAsync(p => p.Email.ToLower() == person.Email.ToLower());
 
-            if (existingPerson != null)
-            {
-                return BadRequest(new { message = "Username is already taken." });
-            }
+            if (existingPerson != null) return BadRequest(new { message = "Email is already taken." });
 
-            if (string.IsNullOrWhiteSpace(person.Password))
-            {
-                return BadRequest(new { message = "Password is required." });
-            }
+            if (string.IsNullOrWhiteSpace(person.Password)) return BadRequest(new { message = "Password is required." });
 
             person.Password = BCrypt.Net.BCrypt.HashPassword(person.Password);
-            var dummyAvatar = await _context.Images
-                .FirstOrDefaultAsync(i => i.Id == 1);
+
+            var dummyAvatar = await _context.Images.FirstOrDefaultAsync(i => i.Id == 1);
             if (dummyAvatar != null) person.Image = dummyAvatar;
 
             _context.Persons.Add(person);
@@ -85,19 +83,41 @@ namespace debt_collector_api.Controllers
             return CreatedAtAction("GetPerson", new { id = person.Id }, person);
         }
 
-        // GET: api/People/CheckUsername?username=someUsername
-        [HttpGet("CheckUsername")]
-        public async Task<ActionResult<bool>> CheckUsernameAvailability([FromQuery] string username)
+        [HttpPut("{id}/set-username")]
+        public async Task<IActionResult> SetUsername(int id, [FromBody] SetUsernameRequest request)
         {
-            if (string.IsNullOrWhiteSpace(username))
-            {
-                return BadRequest(new { message = "Username is required." });
-            }
+            var personId = _authorizationHelper.GetCurrentPersonId();
 
-            var isTaken = await _context.Persons
-                .AnyAsync(p => p.Username.ToLower() == username.ToLower());
+            if (personId == null || personId != id) return Unauthorized(new { message = "Invalid token" });
 
-            return Ok(!isTaken);
+            var person = await _context.Persons.FindAsync(id);
+            if (person == null) return NotFound();
+
+            if (string.IsNullOrWhiteSpace(request.Username)) return BadRequest(new { message = "Username cannot be empty." });
+
+            person.Username = request.Username;
+            await _context.SaveChangesAsync();
+
+            return NoContent();
         }
+
+        [HttpPut("{id}/set-currency")]
+        public async Task<IActionResult> SetCurrency(int id, [FromBody] SetCurrencyRequest request)
+        {
+            var personId = _authorizationHelper.GetCurrentPersonId();
+
+            if (personId == null || personId != id) return Unauthorized(new { message = "Invalid token" });
+
+            var person = await _context.Persons.FindAsync(id);
+            if (person == null) return NotFound();
+
+            if (string.IsNullOrWhiteSpace(request.Currency)) return BadRequest(new { message = "Currency cannot be empty." });
+
+            person.PrimaryCurrency = request.Currency;
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
     }
 }

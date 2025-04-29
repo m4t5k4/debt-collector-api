@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using debt_collector_api.Data;
 
@@ -11,9 +12,11 @@ using debt_collector_api.Data;
 namespace debt_collector_api.Migrations
 {
     [DbContext(typeof(DebtCollectorContext))]
-    partial class DebtCollectorContextModelSnapshot : ModelSnapshot
+    [Migration("20250429122438_AddUniqueIndexToPersonEmail")]
+    partial class AddUniqueIndexToPersonEmail
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -277,10 +280,6 @@ namespace debt_collector_api.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Password")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PrimaryCurrency")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 

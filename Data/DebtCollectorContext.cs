@@ -23,6 +23,11 @@ namespace debt_collector_api.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            //Person
+            modelBuilder.Entity<Person>()
+               .HasIndex(p => p.Email)
+               .IsUnique();
+
             // PersonGroup
             modelBuilder.Entity<PersonGroup>()
                 .HasKey(pg => new { pg.PersonId, pg.GroupId });

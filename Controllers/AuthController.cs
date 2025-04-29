@@ -26,11 +26,11 @@ namespace debt_collector_api.Controllers
         [HttpPost("login")]
         public async Task<ActionResult> Login([FromBody] LoginRequest model)
         {
-            if (model == null || string.IsNullOrWhiteSpace(model.Username) || string.IsNullOrWhiteSpace(model.Password))
+            if (model == null || string.IsNullOrWhiteSpace(model.Email) || string.IsNullOrWhiteSpace(model.Password))
                 return BadRequest(new { message = "Invalid request" });
 
             var person = await _context.Persons
-                .Where(p => p.Username == model.Username)
+                .Where(p => p.Email == model.Email)
                 .FirstOrDefaultAsync();
 
             if (person == null) return Unauthorized(new { message = "Invalid user" });
