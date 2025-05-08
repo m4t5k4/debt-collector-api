@@ -2,6 +2,7 @@
 using debt_collector_api.Helpers;
 using debt_collector_api.Models;
 using debt_collector_api.Requests;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,14 +14,20 @@ namespace debt_collector_api.Controllers
     {
         private readonly DebtCollectorContext _context;
         private readonly AuthorizationHelper _authorizationHelper;
+        private readonly IConfiguration _configuration;
+        private readonly IEmailService _emailService;
 
         public AuthController(
             DebtCollectorContext context,
-            AuthorizationHelper authorizationHelper
+            AuthorizationHelper authorizationHelper,
+            IConfiguration configuration,
+            SmtpEmailService emailService
             )
         {
             _context = context;
             _authorizationHelper = authorizationHelper;
+            _configuration = configuration;
+            _emailService = emailService;
         }
 
         [HttpPost("login")]
@@ -101,6 +108,48 @@ namespace debt_collector_api.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { token = newJwt, refreshToken = newRefreshToken });
+        }
+
+        [HttpPost("send-verification-email")]
+        [Authorize]
+        public async Task<IActionResult> SendVerificationEmail()
+        {
+            var personId = _authorizationHelper.GetCurrentPersonId();
+            if (personId == null) return Unauthorized();
+
+            var person = await _context.Persons.FindAsync(personId);
+            if (person == null || string.IsNullOrEmpty(person.Email))
+                return BadRequest(new { message = "Invalid user or email." });
+
+            // Generate token (can be JWT, GUID, or custom)
+            var token = Guid.NewGuid().ToString();
+
+            // Save token to DB (optional, based on how you verify later)
+            person.EmailVerificationToken = token;
+            person.EmailVerificationSentAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            var verificationUrl = $"{_configuration["App:FrontendBaseUrl"]}/verify-email?token={token}";
+
+            var subject = "Verify your email address";
+            var body = $"Click the link to verify your email: {verificationUrl}";
+
+            await _emailService.SendEmailAsync(person.Email, subject, body);
+
+            return Ok();
+        }
+
+        [HttpGet("verify-email")]
+        public async Task<IActionResult> VerifyEmail([FromQuery] string token)
+        {
+            var person = await _context.Persons.FirstOrDefaultAsync(p => p.EmailVerificationToken == token);
+            if (person == null) return BadRequest(new { message = "Invalid or expired token." });
+
+            person.EmailVerificationToken = null;
+            person.EmailVerifiedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Email verified successfully." });
         }
     }
 }

@@ -53,7 +53,8 @@ namespace debt_collector_api.Controllers
                 Id = person.Id,
                 Username = person.Username,
                 Image = person.Image,
-                PrimaryCurrency = person.PrimaryCurrency
+                PrimaryCurrency = person.PrimaryCurrency,
+                IsVerified = person.IsVerified
             };
 
             return personDTO;

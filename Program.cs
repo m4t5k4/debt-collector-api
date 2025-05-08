@@ -22,6 +22,7 @@ builder.Services.AddSignalR();
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<AuthorizationHelper>();
+builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddSingleton(new BlobStorageService(builder.Configuration.GetConnectionString("AzureBlobStorage")));
 // SQL DB
 builder.Services.AddDbContext<DebtCollectorContext>(options =>

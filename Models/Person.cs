@@ -13,5 +13,9 @@ namespace debt_collector_api.Models
         public int? ImageId { get; set; }
         public Image? Image { get; set; }
         public string PrimaryCurrency { get; set; } = "EUR";
+        public bool IsVerified { get; set; }
+        public string? EmailVerificationToken { get; set; }
+        public DateTime? EmailVerificationSentAt { get; set; }
+        public DateTime? EmailVerifiedAt { get; set; }
     }
 }
