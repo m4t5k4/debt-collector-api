@@ -21,7 +21,7 @@ namespace debt_collector_api.Controllers
             DebtCollectorContext context,
             AuthorizationHelper authorizationHelper,
             IConfiguration configuration,
-            SmtpEmailService emailService
+            IEmailService emailService
             )
         {
             _context = context;
