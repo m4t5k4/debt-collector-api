@@ -64,17 +64,18 @@ namespace debt_collector_api.Controllers
         }
 
         [HttpPost("logout")]
+        [Authorize]
         public async Task<IActionResult> Logout()
         {
-            var userId = _authorizationHelper.GetCurrentPersonId();
+            var personId = _authorizationHelper.GetCurrentPersonId();
 
-            if (userId == null) return Unauthorized(new { message = "Invalid token" });
+            if (personId == null) return Unauthorized(new { message = "Invalid token" });
 
-            var person = await _context.Persons.FirstOrDefaultAsync(p => p.Id == userId);
+            var person = await _context.Persons.FirstOrDefaultAsync(p => p.Id == personId);
 
             if (person == null) return NotFound(new { message = "User not found" });
 
-            var refreshTokens = _context.RefreshTokens.Where(rt => rt.PersonId == userId);
+            var refreshTokens = _context.RefreshTokens.Where(rt => rt.PersonId == personId);
 
             if (!refreshTokens.Any()) return NotFound(new { message = "No active refresh tokens found" });
 
@@ -85,6 +86,7 @@ namespace debt_collector_api.Controllers
         }
 
         [HttpPost("refresh")]
+        [Authorize]
         public async Task<IActionResult> Refresh([FromBody] RefreshRequest request)
         {
             if (request == null || string.IsNullOrEmpty(request.RefreshToken))
@@ -121,35 +123,51 @@ namespace debt_collector_api.Controllers
             if (person == null || string.IsNullOrEmpty(person.Email))
                 return BadRequest(new { message = "Invalid user or email." });
 
-            // Generate token (can be JWT, GUID, or custom)
-            var token = Guid.NewGuid().ToString();
+            var code = GenerateVerificationCode();
 
-            // Save token to DB (optional, based on how you verify later)
-            person.EmailVerificationToken = token;
-            person.EmailVerificationSentAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
+            var templatePath = Path.Combine(Directory.GetCurrentDirectory(), "Templates", "VerificationEmail.html");
+            var body = EmailTemplateHelper.GetTemplate(templatePath, new Dictionary<string, string>
+            {
+                { "{{CODE}}", code }
+            });
 
-            var verificationUrl = $"{_configuration["App:FrontendBaseUrl"]}/verify-email?token={token}";
-
-            var subject = "Verify your email address";
-            var body = $"Click the link to verify your email: {verificationUrl}";
+            var subject = "Jouw verificatiecode";
 
             await _emailService.SendEmailAsync(person.Email, subject, body);
+
+            person.EmailVerificationToken = code;
+            await _context.SaveChangesAsync();
 
             return Ok();
         }
 
-        [HttpGet("verify-email")]
-        public async Task<IActionResult> VerifyEmail([FromQuery] string token)
+        [HttpPost("verify-email")]
+        [Authorize]
+        public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request)
         {
-            var person = await _context.Persons.FirstOrDefaultAsync(p => p.EmailVerificationToken == token);
-            if (person == null) return BadRequest(new { message = "Invalid or expired token." });
+            if (request.Token == null) return BadRequest(new { message = "Invalid or expired token." });
 
-            person.EmailVerificationToken = null;
-            person.EmailVerifiedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
+            var personId = _authorizationHelper.GetCurrentPersonId();
+            if (personId == null) return Unauthorized(new { message = "Invalid token" });
+
+            var person = await _context.Persons.FindAsync(personId);
+            if (person == null) return NotFound(new { message = "User not found" });
+
+            if (request.Token == person.EmailVerificationToken)
+            {
+                person.EmailVerificationToken = null;
+                person.EmailVerifiedAt = DateTime.UtcNow;
+                person.IsVerified = true;
+                await _context.SaveChangesAsync();
+            } else return BadRequest(new { message = "Invalid or expired token." });
 
             return Ok(new { message = "Email verified successfully." });
+        }
+
+        private string GenerateVerificationCode()
+        {
+            var random = new Random();
+            return random.Next(100000, 999999).ToString();
         }
     }
 }
