@@ -35,20 +35,12 @@ namespace DebtCollector.Api.Controllers
         }
 
         // GET: api/Groups
-        // GET: api/Groups
         [HttpGet]
         public async Task<ActionResult<IEnumerable<GroupDTO>>> GetGroup()
         {
-            // Note: Original returned IEnumerable<Group>, but Handler returns IEnumerable<GroupDTO> if I used GetGroupsQuery?
-            // Wait, I didn't verify GetGroupsQuery return type. 
-            // Step 848 showed GetGroupsQuery.cs: public class GetGroupsQuery : IRequest<IEnumerable<GroupDTO>>
-            // So I should return GroupDTO.
-            // But original method signature was ActionResult<IEnumerable<Group>>.
-            // I will change signature to ActionResult<IEnumerable<GroupDTO>> to be cleaner.
             return Ok(await _sender.Send(new GetGroupsQuery()));
         }
 
-        // GET: api/Groups/5
         // GET: api/Groups/5
         [HttpGet("{id}")]
         public async Task<ActionResult<GroupDTO>> GetGroup(int id)

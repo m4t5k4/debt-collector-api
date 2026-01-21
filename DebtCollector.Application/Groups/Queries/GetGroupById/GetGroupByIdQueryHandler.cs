@@ -101,7 +101,49 @@ namespace DebtCollector.Application.Groups.Queries.GetGroupById
 
             if (groupDto == null) throw new KeyNotFoundException("Group not found");
 
+            // Calculate balances
+            if (personId.HasValue)
+            {
+                foreach (var member in groupDto.People)
+                {
+                    if (member.Id == personId.Value) continue;
+
+                    member.Balance = CalculateBalance(personId.Value, member.Id, groupDto.Expenses);
+                }
+            }
+
             return groupDto;
+        }
+
+        private decimal CalculateBalance(int myId, int otherId, IEnumerable<ExpenseDTO> expenses)
+        {
+            decimal balance = 0;
+
+            foreach (var expense in expenses)
+            {
+                foreach (var order in expense.Orders)
+                {
+                    var totalPaid = order.Payers.Sum(p => p.Value);
+                    if (totalPaid == 0) continue;
+
+                    var myPaid = order.Payers.FirstOrDefault(p => p.PersonId == myId)?.Value ?? 0;
+                    var otherPaid = order.Payers.FirstOrDefault(p => p.PersonId == otherId)?.Value ?? 0;
+
+                    var myShareRatio = myPaid / totalPaid;
+                    var otherShareRatio = otherPaid / totalPaid;
+
+                    var myConsumed = order.Debtors.FirstOrDefault(d => d.PersonId == myId)?.Value ?? 0;
+                    var otherConsumed = order.Debtors.FirstOrDefault(d => d.PersonId == otherId)?.Value ?? 0;
+
+                    // Amount I paid for Other (Credit)
+                    balance += (otherConsumed * myShareRatio);
+
+                    // Amount Other paid for Me (Debit)
+                    balance -= (myConsumed * otherShareRatio);
+                }
+            }
+
+            return balance;
         }
     }
 }

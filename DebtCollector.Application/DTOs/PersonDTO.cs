@@ -9,5 +9,6 @@ namespace DebtCollector.Application.DTOs
         public Image? Image { get; set; }
         public string PrimaryCurrency { get; set; }
         public bool IsVerified { get; set; }
+        public decimal Balance { get; set; }
     }
 }

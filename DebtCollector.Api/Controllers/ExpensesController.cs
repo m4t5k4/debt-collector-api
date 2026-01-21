@@ -31,7 +31,7 @@ namespace DebtCollector.Api.Controllers
             {
                 return Ok(await _sender.Send(new GetExpenseByIdQuery { Id = id }));
             }
-            catch (UnauthorizedAccessException) { return Unauthorized(); } // Consistently using Unauthorized for access denied in this refactor
+            catch (UnauthorizedAccessException) { return Unauthorized(); }
             catch (System.Collections.Generic.KeyNotFoundException) { return NotFound(new { message = "Expense not found" }); }
         }
 
@@ -46,7 +46,7 @@ namespace DebtCollector.Api.Controllers
                 return CreatedAtAction("GetExpense", new { id = expense.Id }, expense);
             }
              catch (UnauthorizedAccessException ex) { return Unauthorized(new { message = ex.Message }); }
-             catch (System.Collections.Generic.KeyNotFoundException ex) { return BadRequest(new { message = ex.Message }); } // Group not found
+             catch (System.Collections.Generic.KeyNotFoundException ex) { return BadRequest(new { message = ex.Message }); }
         }
 
         [HttpPut("{expenseId}")]
