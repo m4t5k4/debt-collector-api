@@ -25,6 +25,11 @@ namespace DebtCollector.Infrastructure.Persistence
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.HasDefaultSchema("DebtCollector");
+
+            base.OnModelCreating(modelBuilder);
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(DebtCollectorContext).Assembly);
+
             //Person
             modelBuilder.Entity<Person>()
                .HasIndex(p => p.Email)
@@ -100,16 +105,6 @@ namespace DebtCollector.Infrastructure.Persistence
                 .WithMany()
                 .HasForeignKey(g => g.ImageId)
                 .OnDelete(DeleteBehavior.SetNull);
-
-            // Apply Table Prefix
-            foreach (var entity in modelBuilder.Model.GetEntityTypes())
-            {
-                var currentTableName = entity.GetTableName();
-                if (currentTableName != null)
-                {
-                    entity.SetTableName($"DebtCollector_{currentTableName}");
-                }
-            }
         }
     }
 }

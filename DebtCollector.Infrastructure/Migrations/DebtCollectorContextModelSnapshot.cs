@@ -17,6 +17,7 @@ namespace DebtCollector.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
+                .HasDefaultSchema("DebtCollector")
                 .HasAnnotation("ProductVersion", "10.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
@@ -60,7 +61,7 @@ namespace DebtCollector.Infrastructure.Migrations
 
                     b.HasIndex("PersonId");
 
-                    b.ToTable("DebtCollector_Debtors");
+                    b.ToTable("Debtors", "DebtCollector");
                 });
 
             modelBuilder.Entity("DebtCollector.Domain.Entities.Expense", b =>
@@ -106,7 +107,7 @@ namespace DebtCollector.Infrastructure.Migrations
 
                     b.HasIndex("ImageId");
 
-                    b.ToTable("DebtCollector_Expenses");
+                    b.ToTable("Expenses", "DebtCollector");
                 });
 
             modelBuilder.Entity("DebtCollector.Domain.Entities.Group", b =>
@@ -144,7 +145,7 @@ namespace DebtCollector.Infrastructure.Migrations
 
                     b.HasIndex("ImageId");
 
-                    b.ToTable("DebtCollector_Groups");
+                    b.ToTable("Groups", "DebtCollector");
                 });
 
             modelBuilder.Entity("DebtCollector.Domain.Entities.Image", b =>
@@ -161,7 +162,7 @@ namespace DebtCollector.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("DebtCollector_Images");
+                    b.ToTable("Images", "DebtCollector");
                 });
 
             modelBuilder.Entity("DebtCollector.Domain.Entities.Order", b =>
@@ -208,7 +209,7 @@ namespace DebtCollector.Infrastructure.Migrations
 
                     b.HasIndex("PersonId");
 
-                    b.ToTable("DebtCollector_Orders");
+                    b.ToTable("Orders", "DebtCollector");
                 });
 
             modelBuilder.Entity("DebtCollector.Domain.Entities.Payer", b =>
@@ -246,7 +247,7 @@ namespace DebtCollector.Infrastructure.Migrations
 
                     b.HasIndex("PersonId");
 
-                    b.ToTable("DebtCollector_Payers");
+                    b.ToTable("Payers", "DebtCollector");
                 });
 
             modelBuilder.Entity("DebtCollector.Domain.Entities.Person", b =>
@@ -307,7 +308,7 @@ namespace DebtCollector.Infrastructure.Migrations
 
                     b.HasIndex("ImageId");
 
-                    b.ToTable("DebtCollector_Persons");
+                    b.ToTable("Persons", "DebtCollector");
                 });
 
             modelBuilder.Entity("DebtCollector.Domain.Entities.PersonGroup", b =>
@@ -334,7 +335,7 @@ namespace DebtCollector.Infrastructure.Migrations
 
                     b.HasIndex("GroupId");
 
-                    b.ToTable("DebtCollector_PersonGroups");
+                    b.ToTable("PersonGroups", "DebtCollector");
                 });
 
             modelBuilder.Entity("DebtCollector.Domain.Entities.RefreshToken", b =>
@@ -357,7 +358,7 @@ namespace DebtCollector.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("DebtCollector_RefreshTokens");
+                    b.ToTable("RefreshTokens", "DebtCollector");
                 });
 
             modelBuilder.Entity("DebtCollector.Domain.Entities.Debtor", b =>

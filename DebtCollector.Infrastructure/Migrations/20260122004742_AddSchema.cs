@@ -6,13 +6,17 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace DebtCollector.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class AddTablePrefix : Migration
+    public partial class AddSchema : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.EnsureSchema(
+                name: "DebtCollector");
+
             migrationBuilder.CreateTable(
-                name: "DebtCollector_Images",
+                name: "Images",
+                schema: "DebtCollector",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -21,11 +25,12 @@ namespace DebtCollector.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_DebtCollector_Images", x => x.Id);
+                    table.PrimaryKey("PK_Images", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "DebtCollector_RefreshTokens",
+                name: "RefreshTokens",
+                schema: "DebtCollector",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -36,11 +41,12 @@ namespace DebtCollector.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_DebtCollector_RefreshTokens", x => x.Id);
+                    table.PrimaryKey("PK_RefreshTokens", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "DebtCollector_Groups",
+                name: "Groups",
+                schema: "DebtCollector",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -55,17 +61,19 @@ namespace DebtCollector.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_DebtCollector_Groups", x => x.Id);
+                    table.PrimaryKey("PK_Groups", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_DebtCollector_Groups_DebtCollector_Images_ImageId",
+                        name: "FK_Groups_Images_ImageId",
                         column: x => x.ImageId,
-                        principalTable: "DebtCollector_Images",
+                        principalSchema: "DebtCollector",
+                        principalTable: "Images",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.SetNull);
                 });
 
             migrationBuilder.CreateTable(
-                name: "DebtCollector_Persons",
+                name: "Persons",
+                schema: "DebtCollector",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -86,17 +94,19 @@ namespace DebtCollector.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_DebtCollector_Persons", x => x.Id);
+                    table.PrimaryKey("PK_Persons", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_DebtCollector_Persons_DebtCollector_Images_ImageId",
+                        name: "FK_Persons_Images_ImageId",
                         column: x => x.ImageId,
-                        principalTable: "DebtCollector_Images",
+                        principalSchema: "DebtCollector",
+                        principalTable: "Images",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.SetNull);
                 });
 
             migrationBuilder.CreateTable(
-                name: "DebtCollector_Expenses",
+                name: "Expenses",
+                schema: "DebtCollector",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -113,23 +123,26 @@ namespace DebtCollector.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_DebtCollector_Expenses", x => x.Id);
+                    table.PrimaryKey("PK_Expenses", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_DebtCollector_Expenses_DebtCollector_Groups_GroupId",
+                        name: "FK_Expenses_Groups_GroupId",
                         column: x => x.GroupId,
-                        principalTable: "DebtCollector_Groups",
+                        principalSchema: "DebtCollector",
+                        principalTable: "Groups",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_DebtCollector_Expenses_DebtCollector_Images_ImageId",
+                        name: "FK_Expenses_Images_ImageId",
                         column: x => x.ImageId,
-                        principalTable: "DebtCollector_Images",
+                        principalSchema: "DebtCollector",
+                        principalTable: "Images",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.SetNull);
                 });
 
             migrationBuilder.CreateTable(
-                name: "DebtCollector_PersonGroups",
+                name: "PersonGroups",
+                schema: "DebtCollector",
                 columns: table => new
                 {
                     PersonId = table.Column<int>(type: "int", nullable: false),
@@ -141,23 +154,26 @@ namespace DebtCollector.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_DebtCollector_PersonGroups", x => new { x.PersonId, x.GroupId });
+                    table.PrimaryKey("PK_PersonGroups", x => new { x.PersonId, x.GroupId });
                     table.ForeignKey(
-                        name: "FK_DebtCollector_PersonGroups_DebtCollector_Groups_GroupId",
+                        name: "FK_PersonGroups_Groups_GroupId",
                         column: x => x.GroupId,
-                        principalTable: "DebtCollector_Groups",
+                        principalSchema: "DebtCollector",
+                        principalTable: "Groups",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_DebtCollector_PersonGroups_DebtCollector_Persons_PersonId",
+                        name: "FK_PersonGroups_Persons_PersonId",
                         column: x => x.PersonId,
-                        principalTable: "DebtCollector_Persons",
+                        principalSchema: "DebtCollector",
+                        principalTable: "Persons",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "DebtCollector_Orders",
+                name: "Orders",
+                schema: "DebtCollector",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -174,28 +190,32 @@ namespace DebtCollector.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_DebtCollector_Orders", x => x.Id);
+                    table.PrimaryKey("PK_Orders", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_DebtCollector_Orders_DebtCollector_Expenses_ExpenseId",
+                        name: "FK_Orders_Expenses_ExpenseId",
                         column: x => x.ExpenseId,
-                        principalTable: "DebtCollector_Expenses",
+                        principalSchema: "DebtCollector",
+                        principalTable: "Expenses",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_DebtCollector_Orders_DebtCollector_Images_ImageId",
+                        name: "FK_Orders_Images_ImageId",
                         column: x => x.ImageId,
-                        principalTable: "DebtCollector_Images",
+                        principalSchema: "DebtCollector",
+                        principalTable: "Images",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
-                        name: "FK_DebtCollector_Orders_DebtCollector_Persons_PersonId",
+                        name: "FK_Orders_Persons_PersonId",
                         column: x => x.PersonId,
-                        principalTable: "DebtCollector_Persons",
+                        principalSchema: "DebtCollector",
+                        principalTable: "Persons",
                         principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
-                name: "DebtCollector_Debtors",
+                name: "Debtors",
+                schema: "DebtCollector",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -211,23 +231,26 @@ namespace DebtCollector.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_DebtCollector_Debtors", x => x.Id);
+                    table.PrimaryKey("PK_Debtors", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_DebtCollector_Debtors_DebtCollector_Orders_OrderId",
+                        name: "FK_Debtors_Orders_OrderId",
                         column: x => x.OrderId,
-                        principalTable: "DebtCollector_Orders",
+                        principalSchema: "DebtCollector",
+                        principalTable: "Orders",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_DebtCollector_Debtors_DebtCollector_Persons_PersonId",
+                        name: "FK_Debtors_Persons_PersonId",
                         column: x => x.PersonId,
-                        principalTable: "DebtCollector_Persons",
+                        principalSchema: "DebtCollector",
+                        principalTable: "Persons",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
-                name: "DebtCollector_Payers",
+                name: "Payers",
+                schema: "DebtCollector",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -242,85 +265,100 @@ namespace DebtCollector.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_DebtCollector_Payers", x => x.Id);
+                    table.PrimaryKey("PK_Payers", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_DebtCollector_Payers_DebtCollector_Orders_OrderId",
+                        name: "FK_Payers_Orders_OrderId",
                         column: x => x.OrderId,
-                        principalTable: "DebtCollector_Orders",
+                        principalSchema: "DebtCollector",
+                        principalTable: "Orders",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_DebtCollector_Payers_DebtCollector_Persons_PersonId",
+                        name: "FK_Payers_Persons_PersonId",
                         column: x => x.PersonId,
-                        principalTable: "DebtCollector_Persons",
+                        principalSchema: "DebtCollector",
+                        principalTable: "Persons",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_DebtCollector_Debtors_OrderId",
-                table: "DebtCollector_Debtors",
+                name: "IX_Debtors_OrderId",
+                schema: "DebtCollector",
+                table: "Debtors",
                 column: "OrderId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_DebtCollector_Debtors_PersonId",
-                table: "DebtCollector_Debtors",
+                name: "IX_Debtors_PersonId",
+                schema: "DebtCollector",
+                table: "Debtors",
                 column: "PersonId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_DebtCollector_Expenses_GroupId",
-                table: "DebtCollector_Expenses",
+                name: "IX_Expenses_GroupId",
+                schema: "DebtCollector",
+                table: "Expenses",
                 column: "GroupId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_DebtCollector_Expenses_ImageId",
-                table: "DebtCollector_Expenses",
+                name: "IX_Expenses_ImageId",
+                schema: "DebtCollector",
+                table: "Expenses",
                 column: "ImageId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_DebtCollector_Groups_ImageId",
-                table: "DebtCollector_Groups",
+                name: "IX_Groups_ImageId",
+                schema: "DebtCollector",
+                table: "Groups",
                 column: "ImageId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_DebtCollector_Orders_ExpenseId",
-                table: "DebtCollector_Orders",
+                name: "IX_Orders_ExpenseId",
+                schema: "DebtCollector",
+                table: "Orders",
                 column: "ExpenseId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_DebtCollector_Orders_ImageId",
-                table: "DebtCollector_Orders",
+                name: "IX_Orders_ImageId",
+                schema: "DebtCollector",
+                table: "Orders",
                 column: "ImageId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_DebtCollector_Orders_PersonId",
-                table: "DebtCollector_Orders",
+                name: "IX_Orders_PersonId",
+                schema: "DebtCollector",
+                table: "Orders",
                 column: "PersonId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_DebtCollector_Payers_OrderId",
-                table: "DebtCollector_Payers",
+                name: "IX_Payers_OrderId",
+                schema: "DebtCollector",
+                table: "Payers",
                 column: "OrderId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_DebtCollector_Payers_PersonId",
-                table: "DebtCollector_Payers",
+                name: "IX_Payers_PersonId",
+                schema: "DebtCollector",
+                table: "Payers",
                 column: "PersonId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_DebtCollector_PersonGroups_GroupId",
-                table: "DebtCollector_PersonGroups",
+                name: "IX_PersonGroups_GroupId",
+                schema: "DebtCollector",
+                table: "PersonGroups",
                 column: "GroupId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_DebtCollector_Persons_Email",
-                table: "DebtCollector_Persons",
+                name: "IX_Persons_Email",
+                schema: "DebtCollector",
+                table: "Persons",
                 column: "Email",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_DebtCollector_Persons_ImageId",
-                table: "DebtCollector_Persons",
+                name: "IX_Persons_ImageId",
+                schema: "DebtCollector",
+                table: "Persons",
                 column: "ImageId");
         }
 
@@ -328,31 +366,40 @@ namespace DebtCollector.Infrastructure.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "DebtCollector_Debtors");
+                name: "Debtors",
+                schema: "DebtCollector");
 
             migrationBuilder.DropTable(
-                name: "DebtCollector_Payers");
+                name: "Payers",
+                schema: "DebtCollector");
 
             migrationBuilder.DropTable(
-                name: "DebtCollector_PersonGroups");
+                name: "PersonGroups",
+                schema: "DebtCollector");
 
             migrationBuilder.DropTable(
-                name: "DebtCollector_RefreshTokens");
+                name: "RefreshTokens",
+                schema: "DebtCollector");
 
             migrationBuilder.DropTable(
-                name: "DebtCollector_Orders");
+                name: "Orders",
+                schema: "DebtCollector");
 
             migrationBuilder.DropTable(
-                name: "DebtCollector_Expenses");
+                name: "Expenses",
+                schema: "DebtCollector");
 
             migrationBuilder.DropTable(
-                name: "DebtCollector_Persons");
+                name: "Persons",
+                schema: "DebtCollector");
 
             migrationBuilder.DropTable(
-                name: "DebtCollector_Groups");
+                name: "Groups",
+                schema: "DebtCollector");
 
             migrationBuilder.DropTable(
-                name: "DebtCollector_Images");
+                name: "Images",
+                schema: "DebtCollector");
         }
     }
 }
