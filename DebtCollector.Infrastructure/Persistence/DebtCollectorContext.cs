@@ -100,6 +100,16 @@ namespace DebtCollector.Infrastructure.Persistence
                 .WithMany()
                 .HasForeignKey(g => g.ImageId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // Apply Table Prefix
+            foreach (var entity in modelBuilder.Model.GetEntityTypes())
+            {
+                var currentTableName = entity.GetTableName();
+                if (currentTableName != null)
+                {
+                    entity.SetTableName($"DebtCollector_{currentTableName}");
+                }
+            }
         }
     }
 }
