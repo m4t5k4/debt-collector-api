@@ -27,14 +27,8 @@ builder.Services
     .AddQueryType<DebtCollector.Api.GraphQL.Query>();
 
 builder.Services.AddHttpContextAccessor();
-// AuthorizationService moved to Infrastructure DI
-// builder.Services.AddScoped<IEmailService, AzureEmailService>(); // Moved to Infra
-// builder.Services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<DebtCollectorContext>()); // Moved to Infra
-// builder.Services.AddSingleton(new BlobStorageService(builder.Configuration.GetConnectionString("AzureBlobStorage"))); // Moved to Infra
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
-
-// SQL DB registration moved to AddInfrastructure
 
 // CORS
 builder.Services.AddCors(options =>
@@ -77,7 +71,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Enable Swagger in all environments (including Production for Azure)
 app.UseSwagger();
 app.UseSwaggerUI();
 
