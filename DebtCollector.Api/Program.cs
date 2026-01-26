@@ -77,6 +77,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Enable Swagger in all environments (including Production for Azure)
 app.UseSwagger();
 app.UseSwaggerUI();
 
