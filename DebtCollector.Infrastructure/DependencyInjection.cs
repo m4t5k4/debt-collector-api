@@ -19,27 +19,8 @@ namespace DebtCollector.Infrastructure
             
             services.AddDbContext<DebtCollectorContext>(options =>
             {
-                // Check if using Managed Identity (Azure Active Directory authentication)
-                if (connectionString?.Contains("Authentication=Active Directory Default", StringComparison.OrdinalIgnoreCase) == true)
-                {
-                    var sqlConnection = new SqlConnection(connectionString);
-                    
-                    // Get access token using Managed Identity
-                    var credential = new DefaultAzureCredential();
-                    var token = credential.GetToken(
-                        new TokenRequestContext(new[] { "https://database.windows.net/.default" }));
-                    
-                    sqlConnection.AccessToken = token.Token;
-                    
-                    options.UseSqlServer(sqlConnection,
-                        builder => builder.MigrationsAssembly(typeof(DebtCollectorContext).Assembly.FullName));
-                }
-                else
-                {
-                    // Fallback to traditional connection string (for local development)
-                    options.UseSqlServer(connectionString,
-                        builder => builder.MigrationsAssembly(typeof(DebtCollectorContext).Assembly.FullName));
-                }
+                options.UseSqlServer(connectionString,
+                    builder => builder.MigrationsAssembly(typeof(DebtCollectorContext).Assembly.FullName));
             });
 
             services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<DebtCollectorContext>());
